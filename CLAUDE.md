@@ -40,7 +40,7 @@ antes de qualquer chamada.
 | `src/slots.ts` | extração de restrições do texto |
 | `src/client.ts` | pool de clientes MCP (http e stdio) + normalização de resultados |
 | `src/orchestrator.ts` | plano, execução, filtros e combinações |
-| `src/server.ts` | as 9 MCP tools do Core |
+| `src/mcp-server.ts` | as 9 MCP tools do Core |
 | `src/stdio.ts` | entrypoint local (stdio) |
 | `api/mcp.ts` | entrypoint HTTP para a Vercel (`/mcp`, streamable http stateless) |
 | `src/entities/*.ts` | duas entidades **demo** locais, só para desenvolvimento |

@@ -2,7 +2,7 @@
 /** Entrypoint local: expõe o Core como servidor MCP via stdio (Claude Desktop, Claude Code, etc.). */
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { closeAll } from "./client.js";
-import { createCoreServer } from "./server.js";
+import { createCoreServer } from "./mcp-server.js";
 
 const server = createCoreServer();
 await server.connect(new StdioServerTransport());
