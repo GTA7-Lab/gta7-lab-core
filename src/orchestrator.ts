@@ -2,43 +2,10 @@ import { callEntityTool, extractItems } from "./client.js";
 import { FOOD_TAGS, detectTags, expandTags } from "./lexicon.js";
 import { listEntities } from "./registry.js";
 import { NEAR_RE, extractSlots } from "./slots.js";
+import { AREA_FIELDS, CAPACITY_FIELDS, NAME_FIELDS, PRICE_FIELDS, numberOf, textOf } from "./fields.js";
 import type { CityItem, Entity, Plan, PlanStep, RequestSlots, StepResult } from "./types.js";
 
 const DEFAULT_LIMIT = 5;
-
-// --------------------------------------------------------------------- campos
-
-function field(item: Record<string, unknown>, aliases: string[]): unknown {
-  const lower = new Map(Object.keys(item).map(k => [k.toLowerCase(), k]));
-  for (const a of aliases) {
-    const key = lower.get(a.toLowerCase());
-    if (key !== undefined && item[key] !== null && item[key] !== undefined) return item[key];
-  }
-  return undefined;
-}
-
-const NAME_FIELDS = ["name", "nome", "title", "titulo", "título"];
-const PRICE_FIELDS = [
-  "pricePerPerson", "price_per_person", "precoPorPessoa", "preco_por_pessoa",
-  "ticketPrice", "ticket_price", "price", "preco", "preço", "valor"
-];
-const CAPACITY_FIELDS = ["capacity", "capacidade", "maxPartySize", "max_party_size", "seats", "lotacao", "lotação"];
-const AREA_FIELDS = ["area", "área", "neighborhood", "bairro", "region", "regiao", "região", "district", "zona", "local"];
-
-function numberOf(item: Record<string, unknown>, aliases: string[]): number | undefined {
-  const v = field(item, aliases);
-  if (typeof v === "number" && Number.isFinite(v)) return v;
-  if (typeof v === "string") {
-    const n = Number(v.replace(/[^\d.,-]/g, "").replace(",", "."));
-    if (Number.isFinite(n)) return n;
-  }
-  return undefined;
-}
-
-function textOf(item: Record<string, unknown>, aliases: string[]): string | undefined {
-  const v = field(item, aliases);
-  return typeof v === "string" ? v : undefined;
-}
 
 // ---------------------------------------------------------------------- plano
 

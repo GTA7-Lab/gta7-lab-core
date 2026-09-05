@@ -2,18 +2,29 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { callEntityTool, extractItems, listEntityTools } from "./client.js";
 import { LEXICON } from "./lexicon.js";
-import { dataFilePath, getEntity, listEntities, registerEntity, removeEntity, updateEntity } from "./registry.js";
+import { getEntity, listEntities, registerEntity, removeEntity, updateEntity } from "./registry.js";
 import { buildPlan, orchestrate } from "./orchestrator.js";
+import { checkMagicWord } from "./magic-word.js";
+import {
+  presentCityTools,
+  presentEntities,
+  presentEntity,
+  presentError,
+  presentOrchestration,
+  presentPlan,
+  presentRegistered,
+  presentRemoved,
+  presentToolCall,
+  presentUpdated
+} from "./present.js";
 
-function json(payload: unknown, isError = false) {
-  return {
-    isError,
-    content: [{ type: "text" as const, text: JSON.stringify(payload, null, 2) }]
-  };
+/** Toda resposta do Core sai como texto em português — nunca JSON cru. */
+function say(text: string, isError = false) {
+  return { isError, content: [{ type: "text" as const, text }] };
 }
 
 function fail(err: unknown) {
-  return json({ error: err instanceof Error ? err.message : String(err) }, true);
+  return say(presentError(err), true);
 }
 
 const entityToolShape = z.object({
@@ -28,7 +39,13 @@ const entityToolShape = z.object({
     .describe("slot canônico -> parâmetro da tool. Ex.: { \"people\": \"partySize\" }")
 });
 
+const palavraMagica = z
+  .string()
+  .optional()
+  .describe("palavra mágica da cidade; sem ela o registro não pode ser alterado");
+
 const entityShape = {
+  palavra_magica: palavraMagica,
   id: z.string().describe("identificador único, minúsculo (ex.: 'restaurants')"),
   name: z.string(),
   description: z.string().optional(),
@@ -64,8 +81,7 @@ export function createCoreServer(): McpServer {
       description: "Lista as entidades registradas na cidade.",
       inputSchema: { enabledOnly: z.boolean().optional().describe("padrão: false") }
     },
-    async ({ enabledOnly }) =>
-      json({ dataFile: dataFilePath(), entities: listEntities({ enabledOnly: enabledOnly ?? false }) })
+    async ({ enabledOnly }) => say(presentEntities(listEntities({ enabledOnly: enabledOnly ?? false })))
   );
 
   server.registerTool(
@@ -77,7 +93,7 @@ export function createCoreServer(): McpServer {
     },
     async ({ id }) => {
       const entity = getEntity(id);
-      return entity ? json(entity) : fail(`entidade '${id}' não encontrada`);
+      return entity ? say(presentEntity(entity)) : fail(`não achei nenhum lugar chamado '${id}' na cidade`);
     }
   );
 
@@ -91,9 +107,12 @@ export function createCoreServer(): McpServer {
       inputSchema: entityShape
     },
     async input => {
+      const { palavra_magica, ...dados } = input;
+      const permitido = checkMagicWord(palavra_magica);
+      if (!permitido.ok) return say(permitido.reason, true);
       try {
-        const { entity, warning } = registerEntity(input);
-        return json({ registered: entity, warning });
+        const { entity, warning } = registerEntity(dados);
+        return say(presentRegistered(entity, warning));
       } catch (err) {
         return fail(err);
       }
@@ -106,14 +125,17 @@ export function createCoreServer(): McpServer {
       title: "Atualizar entidade",
       description: "Atualiza campos de uma entidade já registrada (merge raso).",
       inputSchema: {
+        palavra_magica: palavraMagica,
         id: z.string(),
         patch: z.record(z.unknown()).describe("campos a sobrescrever; 'id' é ignorado")
       }
     },
-    async ({ id, patch }) => {
+    async ({ id, patch, palavra_magica }) => {
+      const permitido = checkMagicWord(palavra_magica);
+      if (!permitido.ok) return say(permitido.reason, true);
       try {
         const { entity, warning } = updateEntity(id, patch as Record<string, unknown>);
-        return json({ updated: entity, warning });
+        return say(presentUpdated(entity, warning));
       } catch (err) {
         return fail(err);
       }
@@ -125,12 +147,14 @@ export function createCoreServer(): McpServer {
     {
       title: "Remover entidade",
       description: "Remove uma entidade do registro.",
-      inputSchema: { id: z.string() }
+      inputSchema: { palavra_magica: palavraMagica, id: z.string() }
     },
-    async ({ id }) => {
+    async ({ id, palavra_magica }) => {
+      const permitido = checkMagicWord(palavra_magica);
+      if (!permitido.ok) return say(permitido.reason, true);
       try {
         const { removed, warning } = removeEntity(id);
-        return json({ removed, warning });
+        return say(presentRemoved(removed, warning));
       } catch (err) {
         return fail(err);
       }
@@ -152,26 +176,21 @@ export function createCoreServer(): McpServer {
       const targets = entityId
         ? [getEntity(entityId)].filter(Boolean)
         : listEntities({ enabledOnly: true });
-      if (targets.length === 0) return fail(entityId ? `entidade '${entityId}' não encontrada` : "nenhuma entidade ativa");
+      if (targets.length === 0) {
+        return fail(entityId ? `não achei nenhum lugar chamado '${entityId}' na cidade` : "a cidade ainda não tem nenhum lugar no ar");
+      }
 
       const out = await Promise.all(
         targets.map(async entity => {
           try {
             const live = await listEntityTools(entity!);
-            const declared = entity!.tools.map(t => t.name);
-            return {
-              entityId: entity!.id,
-              ok: true,
-              tools: live,
-              declaredButMissing: declared.filter(d => !live.some(l => l.name === d)),
-              liveButNotRegistered: live.map(l => l.name).filter(n => !declared.includes(n))
-            };
+            return { entityId: entity!.id, entityName: entity!.name, ok: true, tools: live };
           } catch (err) {
-            return { entityId: entity!.id, ok: false, error: (err as Error).message, tools: [] };
+            return { entityId: entity!.id, entityName: entity!.name, ok: false, error: (err as Error).message, tools: [] };
           }
         })
       );
-      return json(out);
+      return say(presentCityTools(out));
     }
   );
 
@@ -188,11 +207,11 @@ export function createCoreServer(): McpServer {
     },
     async ({ entityId, tool, arguments: args }) => {
       const entity = getEntity(entityId);
-      if (!entity) return fail(`entidade '${entityId}' não encontrada`);
+      if (!entity) return fail(`não achei nenhum lugar chamado '${entityId}' na cidade`);
       try {
         const result = await callEntityTool(entity, tool, (args as Record<string, unknown>) ?? {});
         const { items } = extractItems(result);
-        return json({ entityId, tool, isError: result.isError, items, text: result.text });
+        return say(presentToolCall(entity.name, items, result.text), result.isError);
       } catch (err) {
         return fail(err);
       }
@@ -213,7 +232,7 @@ export function createCoreServer(): McpServer {
         limit: z.number().int().positive().optional()
       }
     },
-    async ({ request, limit }) => json(buildPlan(request, { limit }))
+    async ({ request, limit }) => say(presentPlan(buildPlan(request, { limit })))
   );
 
   server.registerTool(
@@ -231,7 +250,7 @@ export function createCoreServer(): McpServer {
     },
     async ({ request, limit }) => {
       try {
-        return json(await orchestrate(request, { limit }));
+        return say(presentOrchestration(await orchestrate(request, { limit })));
       } catch (err) {
         return fail(err);
       }
