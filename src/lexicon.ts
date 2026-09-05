@@ -21,6 +21,11 @@ export const LEXICON: Record<string, string[]> = {
     "transporte", "carona", "uber", "taxi", "táxi", "carro", "onibus", "ônibus",
     "metro", "metrô", "ride", "transport"
   ],
+  grocery: [
+    "mercado", "supermercado", "supermercados", "compras", "fazer compras", "feira",
+    "hortifruti", "mantimentos", "acougue", "açougue", "padaria", "peixaria",
+    "grocery", "groceries", "supermarket", "market"
+  ],
   activity: [
     "atividade", "atividades", "fazer alguma coisa", "fazer algo", "diversao", "diversão",
     "passeio", "lazer", "entretenimento", "rolê", "role", "activity", "something to do", "fun"

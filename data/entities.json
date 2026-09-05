@@ -46,5 +46,26 @@
       { "name": "get_show", "kind": "detail", "argsMap": {} }
     ],
     "enabled": true
+  },
+  {
+    "id": "supermercado",
+    "name": "Supermercado GTA7 Central",
+    "description": "Supermercado da GTA7 Lab: alimentos, bebidas, limpeza e bazar, com padaria, açougue e peixaria.",
+    "transport": "http",
+    "endpoint": "https://gta7-lab-supermercado-b-on-d.vercel.app/api/mcp",
+    "tags": ["grocery"],
+    "tools": [
+      {
+        "name": "search_products",
+        "kind": "search",
+        "argsMap": {
+          "query": "query",
+          "maxPricePerPerson": "max_price"
+        }
+      },
+      { "name": "check_stock", "kind": "other", "argsMap": {} },
+      { "name": "get_store_info", "kind": "other", "argsMap": {} }
+    ],
+    "enabled": true
   }
 ]
