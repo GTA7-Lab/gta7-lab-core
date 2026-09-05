@@ -6,17 +6,18 @@ Este repositório **é a cidade** da GTA7 Lab, não uma entidade. Ele é um serv
 registradas (restaurante, casa de shows, cinema, hotel, transporte...), escolhe quais
 entidades atendem um pedido, chama as tools delas e combina os resultados.
 
-## Layout do repositório
-`GTA7-Lab/gta7-lab` é um monorepo: o Core em `core/`, as entidades em `entities/<id>/`.
-Na Vercel, o projeto do Core precisa de **Root Directory = `core`** (e cada entidade,
-`entities/<id>`).
-```
-core/                             <- este projeto (a cidade)
-entities/bank/                    <- MCP http em /api/mcp
-entities/supermercado/            <- MCP http (streamable) em /api/mcp
-entities/icecream/                <- MCP http (streamable) em /api/mcp, e stdio local
-entities/restaurante-ai-q-fome/   <- MCP stdio
-```
+## Onde isto vive
+`GTA7-Lab/gta7-lab-core` tem só o Core, na raiz — na Vercel, sem Root Directory especial.
+As entidades ficam em `GTA7-Lab/gta7-lab`, uma pasta cada em `entities/<id>/`. O Core não
+depende daquele repo em tempo de execução: fala com as entidades pelos endpoints MCP
+registrados em `data/entities.json`.
+
+| Entidade | MCP |
+|---|---|
+| `bank` | http em `/api/mcp` |
+| `supermercado` | http (streamable) em `/api/mcp` |
+| `icecream` | http (streamable) em `/api/mcp`, e stdio local |
+| `restaurante-ai-q-fome` | stdio |
 
 ## Arquitetura
 ```

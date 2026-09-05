@@ -34,7 +34,7 @@ pedidos de exemplo e verifica o CRUD do registro.
   "mcpServers": {
     "gta7-lab-city": {
       "command": "node",
-      "args": ["C:/caminho/para/gta7-lab/core/dist/src/stdio.js"]
+      "args": ["C:/caminho/para/gta7-lab-core/dist/src/stdio.js"]
     }
   }
 }
@@ -79,8 +79,7 @@ Devolver `area` e um preço por pessoa faz a entidade aparecer nas combinações
 ## Deploy na Vercel
 
 O projeto já vem com `vercel.json`; `api/mcp.ts` vira a função em `/mcp`.
-Como o Core é uma subpasta do monorepo, o projeto na Vercel precisa de
-**Root Directory = `core`**.
+O Core está na raiz deste repo, então não precisa de Root Directory especial na Vercel.
 
 ```bash
 npx vercel deploy --prod
