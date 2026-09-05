@@ -42,7 +42,7 @@ antes de qualquer chamada.
 | `src/orchestrator.ts` | plano, execução, filtros e combinações |
 | `src/mcp-server.ts` | as 9 MCP tools do Core |
 | `src/stdio.ts` | entrypoint local (stdio) |
-| `api/mcp.ts` | entrypoint HTTP para a Vercel (`/mcp`, streamable http stateless) |
+| `src/server.ts` | entrypoint HTTP (Vercel): `/mcp` streamable http stateless, e a landing |
 | `src/entities/*.ts` | duas entidades **demo** locais, só para desenvolvimento |
 | `scripts/smoke.ts` | prova os critérios de sucesso ponta a ponta |
 
