@@ -7,14 +7,15 @@ registradas (restaurante, casa de shows, cinema, hotel, transporte...), escolhe 
 entidades atendem um pedido, chama as tools delas e combina os resultados.
 
 ## Layout do repositório
-`ericmgomes/gta7-lab` é um monorepo com uma pasta por projeto. O Core vive em `core/`;
-cada entidade tem a sua. Na Vercel, o projeto do Core precisa de **Root Directory = `core`**.
+`ericmgomes/gta7-lab` é um monorepo: o Core em `core/`, as entidades em `entities/<id>/`.
+Na Vercel, o projeto do Core precisa de **Root Directory = `core`** (e cada entidade,
+`entities/<id>`).
 ```
-core/                    <- este projeto (a cidade)
-bank/                    <- MCP http em /api/mcp
-supermercado/            <- MCP http (streamable) em /api/mcp
-icecream/                <- MCP stdio
-restaurante-ai-q-fome/   <- MCP stdio
+core/                             <- este projeto (a cidade)
+entities/bank/                    <- MCP http em /api/mcp
+entities/supermercado/            <- MCP http (streamable) em /api/mcp
+entities/icecream/                <- MCP stdio
+entities/restaurante-ai-q-fome/   <- MCP stdio
 ```
 
 ## Arquitetura
