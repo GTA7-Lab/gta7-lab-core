@@ -5,6 +5,7 @@ import { LEXICON } from "./lexicon.js";
 import { getEntity, listEntities, registerEntity, removeEntity, updateEntity } from "./registry.js";
 import { buildPlan, orchestrate } from "./orchestrator.js";
 import { checkMagicWord } from "./magic-word.js";
+import { addResident, getResident, listResidents, removeResident, updateResident } from "./residents.js";
 import {
   presentCityTools,
   presentEntities,
@@ -14,6 +15,11 @@ import {
   presentPlan,
   presentRegistered,
   presentRemoved,
+  presentResident,
+  presentResidentAdded,
+  presentResidentRemoved,
+  presentResidentUpdated,
+  presentResidents,
   presentToolCall,
   presentUpdated
 } from "./present.js";
@@ -251,6 +257,111 @@ export function createCoreServer(): McpServer {
     async ({ request, limit }) => {
       try {
         return say(presentOrchestration(await orchestrate(request, { limit })));
+      } catch (err) {
+        return fail(err);
+      }
+    }
+  );
+
+  // ------------------------------------------------------------ moradores
+
+  // Diferente das entidades, aqui até a leitura pede a palavra mágica:
+  // morador é gente, não serviço público da cidade.
+
+  server.registerTool(
+    "list_residents",
+    {
+      title: "Listar moradores",
+      description: "Lista quem mora na cidade. Precisa da palavra mágica.",
+      inputSchema: { palavra_magica: palavraMagica }
+    },
+    async ({ palavra_magica }) => {
+      const permitido = checkMagicWord(palavra_magica);
+      if (!permitido.ok) return say(permitido.reason, true);
+      return say(presentResidents(listResidents()));
+    }
+  );
+
+  server.registerTool(
+    "get_resident",
+    {
+      title: "Ver um morador",
+      description: "Mostra os dados de um morador pelo apelido. Precisa da palavra mágica.",
+      inputSchema: { palavra_magica: palavraMagica, id: z.string() }
+    },
+    async ({ id, palavra_magica }) => {
+      const permitido = checkMagicWord(palavra_magica);
+      if (!permitido.ok) return say(permitido.reason, true);
+      const morador = getResident(id);
+      return morador ? say(presentResident(morador)) : fail(`não encontrei ninguém com o apelido '${id}' na cidade`);
+    }
+  );
+
+  server.registerTool(
+    "register_resident",
+    {
+      title: "Registrar morador",
+      description: "Coloca uma pessoa para morar na cidade. Precisa da palavra mágica.",
+      inputSchema: {
+        palavra_magica: palavraMagica,
+        id: z.string().describe("apelido único, minúsculo (ex.: 'eric')"),
+        name: z.string(),
+        bio: z.string().optional(),
+        bairro: z.string().optional(),
+        interesses: z
+          .array(z.string())
+          .optional()
+          .describe(`o que a pessoa gosta; use as tags da cidade: ${Object.keys(LEXICON).join(", ")}`)
+      }
+    },
+    async ({ palavra_magica, ...dados }) => {
+      const permitido = checkMagicWord(palavra_magica);
+      if (!permitido.ok) return say(permitido.reason, true);
+      try {
+        const { resident, warning } = addResident(dados);
+        return say(presentResidentAdded(resident, warning));
+      } catch (err) {
+        return fail(err);
+      }
+    }
+  );
+
+  server.registerTool(
+    "update_resident",
+    {
+      title: "Atualizar morador",
+      description: "Muda os dados de quem já mora na cidade. Precisa da palavra mágica.",
+      inputSchema: {
+        palavra_magica: palavraMagica,
+        id: z.string(),
+        patch: z.record(z.unknown()).describe("campos a mudar; o apelido não muda")
+      }
+    },
+    async ({ id, patch, palavra_magica }) => {
+      const permitido = checkMagicWord(palavra_magica);
+      if (!permitido.ok) return say(permitido.reason, true);
+      try {
+        const { resident, warning } = updateResident(id, patch as Record<string, unknown>);
+        return say(presentResidentUpdated(resident, warning));
+      } catch (err) {
+        return fail(err);
+      }
+    }
+  );
+
+  server.registerTool(
+    "remove_resident",
+    {
+      title: "Remover morador",
+      description: "Tira uma pessoa da cidade. Precisa da palavra mágica.",
+      inputSchema: { palavra_magica: palavraMagica, id: z.string() }
+    },
+    async ({ id, palavra_magica }) => {
+      const permitido = checkMagicWord(palavra_magica);
+      if (!permitido.ok) return say(permitido.reason, true);
+      try {
+        const { resident, warning } = removeResident(id);
+        return say(presentResidentRemoved(resident, warning));
       } catch (err) {
         return fail(err);
       }

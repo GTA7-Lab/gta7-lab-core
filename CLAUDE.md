@@ -40,10 +40,13 @@ antes de qualquer chamada.
 | `src/slots.ts` | extração de restrições do texto |
 | `src/client.ts` | pool de clientes MCP (http e stdio) + normalização de resultados |
 | `src/orchestrator.ts` | plano, execução, filtros e combinações |
-| `src/mcp-server.ts` | as 9 MCP tools do Core |
+| `src/mcp-server.ts` | as 14 MCP tools do Core |
 | `src/stdio.ts` | entrypoint local (stdio) |
 | `src/server.ts` | entrypoint HTTP (Vercel): `/mcp` streamable http stateless, e a landing |
 | `src/entities/*.ts` | duas entidades **demo** locais, só para desenvolvimento |
+| `src/residents.ts` | moradores da cidade, em `data/residents.json` |
+| `src/magic-word.ts` | confere a palavra mágica das operações protegidas |
+| `src/present.ts` | transforma tudo em texto amigável antes de sair pelo MCP |
 | `scripts/smoke.ts` | prova os critérios de sucesso ponta a ponta |
 
 ## Decisões importantes
@@ -64,10 +67,12 @@ antes de qualquer chamada.
   `capacity/capacidade`, `area/bairro/neighborhood`. Entidade não precisa seguir schema.
 - **Persistência em JSON.** Sem banco, sem auth, sem Docker. Na Vercel o filesystem é
   somente-leitura: as tools de escrita valem só durante a requisição e devolvem `warning`.
-- **Palavra mágica nas alterações** — `register_entity`, `update_entity` e `remove_entity`
-  exigem `palavra_magica` conferida contra `GTA7_MAGIC_WORD` (`src/magic-word.ts`). O
-  endpoint é público; sem isso qualquer um tira uma entidade do ar. Falha fechado: sem a
-  variável definida, ninguém altera nada. Leitura e orquestração seguem livres.
+- **Palavra mágica** — conferida contra `GTA7_MAGIC_WORD` (`src/magic-word.ts`), porque o
+  endpoint é público e sem isso qualquer um tira uma entidade do ar. Falha fechado: sem a
+  variável definida, ninguém altera nada. Protege as **alterações de entidade**
+  (`register_entity`, `update_entity`, `remove_entity`) e **tudo de morador, inclusive
+  ler** — entidade é serviço público da cidade, morador é gente. Consultar a cidade e
+  orquestrar pedidos seguem livres.
 - **Respostas em português, nunca JSON** — tudo passa por `src/present.ts` antes de sair.
   Quem lê do outro lado é uma pessoa, via Claude ou ChatGPT.
 
@@ -90,6 +95,20 @@ antes de qualquer chamada.
 ```
 `transport: "stdio"` usa `command` + `args` no lugar de `endpoint`.
 Tags conhecidas: `food, music, movie, event, lodging, transport, grocery, dessert, activity` (`src/lexicon.ts`).
+
+## Formato de morador (`data/residents.json`)
+```json
+{
+  "id": "eric",
+  "name": "Eric Gomes",
+  "bio": "Cuida da cidade.",
+  "bairro": "Marina",
+  "interesses": ["food", "music"],
+  "desde": "2026-09-05"
+}
+```
+`interesses` usa as mesmas tags das entidades. Hoje elas só descrevem a pessoa; ligá-las
+à orquestração (sugerir pelo gosto de quem pede) é o passo natural seguinte.
 
 ## Status
 No ar em **https://gta7-lab-core.vercel.app/mcp** (Streamable HTTP), com deploy

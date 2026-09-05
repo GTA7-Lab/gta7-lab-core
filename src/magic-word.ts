@@ -22,10 +22,10 @@ export function checkMagicWord(informada: string | undefined): MagicWordCheck {
     };
   }
   if (!informada?.trim()) {
-    return { ok: false, reason: "Essa mudança precisa da palavra mágica da cidade. Me diga qual é e eu faço." };
+    return { ok: false, reason: "Isso precisa da palavra mágica da cidade. Me diga qual é e eu faço." };
   }
   if (informada.trim() !== esperada) {
-    return { ok: false, reason: "Essa não é a palavra mágica da cidade, então deixei o registro como estava." };
+    return { ok: false, reason: "Essa não é a palavra mágica da cidade, então não fiz nada." };
   }
   return { ok: true };
 }

@@ -1,6 +1,7 @@
 import { AREA_FIELDS, DESCRIPTION_FIELDS, NAME_FIELDS, PRICE_FIELDS, numberOf, textOf } from "./fields.js";
 import type { ToolInfo } from "./client.js";
 import type { Combo, OrchestrationResult } from "./orchestrator.js";
+import type { Resident } from "./residents.js";
 import type { CityItem, Entity, Plan } from "./types.js";
 
 /**
@@ -204,4 +205,44 @@ export function presentError(err: unknown): string {
   }
   const msg = err instanceof Error ? err.message : String(err);
   return `Não consegui fazer isso: ${msg}`;
+}
+
+/* ---------------------------------------------------------------- moradores */
+
+function residentLine(r: Resident): string {
+  const detalhes = [r.bairro, r.interesses.length > 0 ? `gosta de ${lista(r.interesses)}` : undefined].filter(Boolean);
+  let linha = `• ${r.name}`;
+  if (detalhes.length > 0) linha += ` — ${detalhes.join(", ")}`;
+  if (r.bio) linha += `\n  ${r.bio}`;
+  linha += `\n  Apelido na cidade: ${r.id}`;
+  return linha;
+}
+
+export function presentResidents(moradores: Resident[]): string {
+  if (moradores.length === 0) return "Ainda não mora ninguém na cidade.";
+  return `A cidade tem ${plural(moradores.length, "morador", "moradores")}:\n\n${moradores.map(residentLine).join("\n\n")}`;
+}
+
+export function presentResident(r: Resident): string {
+  const partes = [`**${r.name}**`];
+  if (r.bio) partes.push(r.bio);
+  const detalhes: string[] = [];
+  if (r.bairro) detalhes.push(`mora em ${r.bairro}`);
+  if (r.interesses.length > 0) detalhes.push(`gosta de ${lista(r.interesses)}`);
+  if (r.desde) detalhes.push(`na cidade desde ${r.desde}`);
+  if (detalhes.length > 0) partes.push(`${detalhes.join(", ")}.`);
+  partes.push(`Apelido na cidade: ${r.id}`);
+  return partes.join("\n\n");
+}
+
+export function presentResidentAdded(r: Resident, warning?: string): string {
+  return comAviso(`Boas-vindas, ${r.name}! Agora você mora na GTA7 Lab.`, warning);
+}
+
+export function presentResidentUpdated(r: Resident, warning?: string): string {
+  return comAviso(`Atualizei os dados de ${r.name}.`, warning);
+}
+
+export function presentResidentRemoved(r: Resident, warning?: string): string {
+  return comAviso(`${r.name} mudou de cidade.`, warning);
 }
