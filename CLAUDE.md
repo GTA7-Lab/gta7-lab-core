@@ -7,7 +7,7 @@ registradas (restaurante, casa de shows, cinema, hotel, transporte...), escolhe 
 entidades atendem um pedido, chama as tools delas e combina os resultados.
 
 ## Layout do repositório
-`ericmgomes/gta7-lab` é um monorepo: o Core em `core/`, as entidades em `entities/<id>/`.
+`GTA7-Lab/gta7-lab` é um monorepo: o Core em `core/`, as entidades em `entities/<id>/`.
 Na Vercel, o projeto do Core precisa de **Root Directory = `core`** (e cada entidade,
 `entities/<id>`).
 ```
@@ -77,16 +77,25 @@ antes de qualquer chamada.
 }
 ```
 `transport: "stdio"` usa `command` + `args` no lugar de `endpoint`.
-Tags conhecidas: `food, music, movie, event, lodging, transport, activity` (`src/lexicon.ts`).
+Tags conhecidas: `food, music, movie, event, lodging, transport, grocery, activity` (`src/lexicon.ts`).
 
 ## Status
-Primeira versão funcionando. `npm run build && npm run smoke` passa: duas entidades
-registradas, tools descobertas via MCP, três cenários orquestrados e CRUD verificado.
-Entrypoint HTTP testado localmente.
+`npm run build && npm run smoke` passa. Registro atual: duas entidades demo (stdio) mais
+`supermercado`, primeira entidade real, por MCP http. O entrypoint HTTP foi testado
+localmente; o deploy na Vercel ainda não aconteceu.
+
+## Problema conhecido
+O Core manda a **frase inteira** do usuário no slot `query`. Entidades que filtram por
+token devolvem vazio para pedidos genéricos: "Preciso fazer compras no mercado" traz 0
+produtos, enquanto `query: "arroz"` traz o item certo. As entidades demo disfarçam isso
+porque ignoram `query` quando ela não casa com nada. A correção é do lado do Core —
+limpar as palavras de intenção antes de mandar, ou não mandar `query` quando sobra só
+intenção.
 
 ## Próxima tarefa
-Registrar as entidades reais do monorepo no lugar das demo. `bank` e `supermercado` já
-falam MCP em http (`/api/mcp`) — falta só a URL de deploy de cada uma para virar
-`endpoint`. `icecream` e `restaurante-ai-q-fome` são stdio, então valem no Core local.
-Publicar na Vercel depende de duas permissões fora do código: o GitHub App da Vercel
-precisa de acesso ao repo, e a integração MCP precisa enxergar o projeto `gta7-lab`.
+1. Resolver o `query` acima.
+2. Registrar `bank` (MCP http em `/api/mcp`) — hoje bloqueado: o deploy dele está com
+   Vercel Authentication ligada e responde 302 para SSO.
+3. `icecream` e `restaurante-ai-q-fome` são stdio; valem no Core local.
+4. Publicar o Core: depende do GitHub App da Vercel ter acesso ao repo e da integração
+   MCP enxergar o projeto. Root Directory = `core`.
