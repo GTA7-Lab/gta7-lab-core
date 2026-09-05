@@ -64,6 +64,12 @@ antes de qualquer chamada.
   `capacity/capacidade`, `area/bairro/neighborhood`. Entidade não precisa seguir schema.
 - **Persistência em JSON.** Sem banco, sem auth, sem Docker. Na Vercel o filesystem é
   somente-leitura: as tools de escrita valem só durante a requisição e devolvem `warning`.
+- **Palavra mágica nas alterações** — `register_entity`, `update_entity` e `remove_entity`
+  exigem `palavra_magica` conferida contra `GTA7_MAGIC_WORD` (`src/magic-word.ts`). O
+  endpoint é público; sem isso qualquer um tira uma entidade do ar. Falha fechado: sem a
+  variável definida, ninguém altera nada. Leitura e orquestração seguem livres.
+- **Respostas em português, nunca JSON** — tudo passa por `src/present.ts` antes de sair.
+  Quem lê do outro lado é uma pessoa, via Claude ou ChatGPT.
 
 ## Formato de registro (`data/entities.json`)
 ```json

@@ -42,9 +42,24 @@ pedidos de exemplo e verifica o CRUD do registro.
 
 **Via HTTP** (ChatGPT, Claude connectors): `POST https://<seu-deploy>.vercel.app/mcp`.
 
+## Palavra mágica
+
+O endpoint MCP é público, então as tools que **alteram** o registro — `register_entity`,
+`update_entity` e `remove_entity` — exigem a palavra mágica da cidade, conferida contra a
+variável de ambiente `GTA7_MAGIC_WORD`. Sem ela definida, ninguém altera nada, inclusive
+rodando local:
+
+```bash
+GTA7_MAGIC_WORD=escolha-uma npm run dev
+```
+
+Na Vercel, defina em Settings → Environment Variables. Ler a cidade e orquestrar pedidos
+continua livre para qualquer um.
+
 ## Registrando uma entidade
 
-Peça ao Claude/ChatGPT conectado ao Core, ou edite `data/entities.json` direto:
+Peça ao Claude/ChatGPT conectado ao Core (passando a palavra mágica), ou edite
+`data/entities.json` direto:
 
 ```json
 {
