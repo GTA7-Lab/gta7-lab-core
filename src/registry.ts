@@ -2,26 +2,32 @@ import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { EntitySchema, type Entity } from "./types.js";
+// Importado como módulo, e não só lido do disco: assim o registro entra no
+// grafo de módulos e sobrevive a ambientes que empacotam só isso (Vercel).
+import seed from "../data/entities.json" with { type: "json" };
 
 /**
- * Persistência local em JSON (sem banco). Em ambientes com filesystem
- * somente-leitura (Vercel) as escritas falham silenciosamente e o registro
- * segue válido apenas em memória, durante a vida da função.
+ * Persistência local em JSON (sem banco). O arquivo em disco manda quando
+ * existe — é o caso rodando local, e é o que as tools de escrita atualizam.
+ * Sem ele, vale o seed importado acima. Em filesystem somente-leitura
+ * (Vercel) as escritas falham e o registro vale só em memória.
  */
 
 const FILE_NAME = join("data", "entities.json");
 
+/**
+ * Raiz do pacote: primeiro ancestral com package.json. Ancorar aí evita achar
+ * a cópia de `data/` que o tsc emite dentro de `dist/` por causa do import.
+ */
 function findDataFile(): string {
   if (process.env.GTA7_ENTITIES_FILE) return resolve(process.env.GTA7_ENTITIES_FILE);
   let dir = dirname(fileURLToPath(import.meta.url));
   for (let i = 0; i < 6; i++) {
-    const candidate = join(dir, FILE_NAME);
-    if (existsSync(candidate)) return candidate;
+    if (existsSync(join(dir, "package.json"))) return join(dir, FILE_NAME);
     const parent = dirname(dir);
     if (parent === dir) break;
     dir = parent;
   }
-  // não encontrado: assume a raiz do processo (será criado na primeira escrita)
   return resolve(process.cwd(), FILE_NAME);
 }
 
@@ -32,11 +38,11 @@ let writable = true;
 
 function load(): Entity[] {
   if (cache) return cache;
-  let parsed: unknown = [];
+  let parsed: unknown = seed;
   try {
     if (existsSync(DATA_FILE)) parsed = JSON.parse(readFileSync(DATA_FILE, "utf8"));
   } catch (err) {
-    console.error(`[registry] falha ao ler ${DATA_FILE}:`, err);
+    console.error(`[registry] falha ao ler ${DATA_FILE}, usando o seed embutido:`, err);
   }
   const list = Array.isArray(parsed) ? parsed : [];
   cache = list.flatMap((raw, i) => {
