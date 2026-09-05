@@ -31,6 +31,16 @@ export const LEXICON: Record<string, string[]> = {
     "acai", "açaí", "casquinha", "milkshake", "picole", "picolé", "doce", "doces",
     "ice cream", "dessert", "sundae"
   ],
+  finance: [
+    "banco", "bancos", "banco digital", "agencia bancaria", "agência bancária",
+    "conta corrente", "conta bancaria", "conta bancária", "saldo", "extrato",
+    "transferencia", "transferência", "pix", "boleto", "emprestimo", "empréstimo",
+    "financiamento", "credito", "crédito", "cartao de credito", "cartão de crédito",
+    "investimento", "investimentos", "investir", "poupanca", "poupança",
+    "cambio", "câmbio", "bolsa de valores", "comprar acoes", "comprar ações",
+    "vender acoes", "vender ações",
+    "bank", "banking", "account balance", "transfer", "loan", "credit card", "investment"
+  ],
   activity: [
     "atividade", "atividades", "fazer alguma coisa", "fazer algo", "diversao", "diversão",
     "passeio", "lazer", "entretenimento", "rolê", "role", "activity", "something to do", "fun"

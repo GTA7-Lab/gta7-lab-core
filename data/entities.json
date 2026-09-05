@@ -126,5 +126,41 @@
       }
     ],
     "enabled": true
+  },
+  {
+    "id": "bank",
+    "name": "Bank of Sajo",
+    "description": "Banco da cidade GTA7 Lab: contas, saldos e transacoes (PIX, cartao, maquininha, cambio, acoes), credito e investimentos.",
+    "transport": "http",
+    "endpoint": "https://gta7-lab-bank-tbone3.vercel.app/api/mcp",
+    "tags": [
+      "finance"
+    ],
+    "tools": [
+      {
+        "name": "search_transactions",
+        "kind": "search",
+        "argsMap": {
+          "query": "search",
+          "limit": "limit"
+        }
+      },
+      {
+        "name": "get_account_balance",
+        "kind": "other",
+        "argsMap": {}
+      },
+      {
+        "name": "simulate_loan",
+        "kind": "other",
+        "argsMap": {}
+      },
+      {
+        "name": "send_pix",
+        "kind": "other",
+        "argsMap": {}
+      }
+    ],
+    "enabled": true
   }
 ]
