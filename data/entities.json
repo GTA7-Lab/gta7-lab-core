@@ -5,8 +5,12 @@
     "description": "Serviço de restaurantes da GTA7 Lab (entidade demo local).",
     "transport": "stdio",
     "command": "node",
-    "args": ["dist/src/entities/restaurants.js"],
-    "tags": ["food"],
+    "args": [
+      "dist/src/entities/restaurants.js"
+    ],
+    "tags": [
+      "food"
+    ],
     "tools": [
       {
         "name": "search_restaurants",
@@ -19,7 +23,11 @@
           "limit": "limit"
         }
       },
-      { "name": "get_restaurant", "kind": "detail", "argsMap": {} }
+      {
+        "name": "get_restaurant",
+        "kind": "detail",
+        "argsMap": {}
+      }
     ],
     "enabled": true
   },
@@ -29,8 +37,14 @@
     "description": "Casa de shows de rock da GTA7 Lab (entidade demo local).",
     "transport": "stdio",
     "command": "node",
-    "args": ["dist/src/entities/venues.js"],
-    "tags": ["music", "activity", "event"],
+    "args": [
+      "dist/src/entities/venues.js"
+    ],
+    "tags": [
+      "music",
+      "activity",
+      "event"
+    ],
     "tools": [
       {
         "name": "search_shows",
@@ -43,7 +57,11 @@
           "limit": "limit"
         }
       },
-      { "name": "get_show", "kind": "detail", "argsMap": {} }
+      {
+        "name": "get_show",
+        "kind": "detail",
+        "argsMap": {}
+      }
     ],
     "enabled": true
   },
@@ -53,7 +71,9 @@
     "description": "Supermercado da GTA7 Lab: alimentos, bebidas, limpeza e bazar, com padaria, açougue e peixaria.",
     "transport": "http",
     "endpoint": "https://gta7-lab-supermercado-b-on-d.vercel.app/api/mcp",
-    "tags": ["grocery"],
+    "tags": [
+      "grocery"
+    ],
     "tools": [
       {
         "name": "search_products",
@@ -63,8 +83,47 @@
           "maxPricePerPerson": "max_price"
         }
       },
-      { "name": "check_stock", "kind": "other", "argsMap": {} },
-      { "name": "get_store_info", "kind": "other", "argsMap": {} }
+      {
+        "name": "check_stock",
+        "kind": "other",
+        "argsMap": {}
+      },
+      {
+        "name": "get_store_info",
+        "kind": "other",
+        "argsMap": {}
+      }
+    ],
+    "enabled": true
+  },
+  {
+    "id": "icecream",
+    "name": "Sorveteria Polar",
+    "description": "Sorveteria artesanal da GTA7 Lab: gelatos, sorbets e opcoes veganas, sem lactose e zero acucar.",
+    "transport": "http",
+    "endpoint": "https://gta7-icecream.vercel.app/api/mcp",
+    "tags": [
+      "dessert"
+    ],
+    "tools": [
+      {
+        "name": "search_flavors",
+        "kind": "search",
+        "argsMap": {
+          "maxPricePerPerson": "max_price_brl",
+          "limit": "limit"
+        }
+      },
+      {
+        "name": "quote_order",
+        "kind": "other",
+        "argsMap": {}
+      },
+      {
+        "name": "recommend_flavors",
+        "kind": "other",
+        "argsMap": {}
+      }
     ],
     "enabled": true
   }

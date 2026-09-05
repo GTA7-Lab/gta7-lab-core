@@ -26,6 +26,11 @@ export const LEXICON: Record<string, string[]> = {
     "hortifruti", "mantimentos", "acougue", "açougue", "padaria", "peixaria",
     "grocery", "groceries", "supermarket", "market"
   ],
+  dessert: [
+    "sorvete", "sorvetes", "sorveteria", "gelato", "gelatto", "sobremesa", "sobremesas",
+    "acai", "açaí", "casquinha", "milkshake", "picole", "picolé", "doce", "doces",
+    "ice cream", "dessert", "sundae"
+  ],
   activity: [
     "atividade", "atividades", "fazer alguma coisa", "fazer algo", "diversao", "diversão",
     "passeio", "lazer", "entretenimento", "rolê", "role", "activity", "something to do", "fun"

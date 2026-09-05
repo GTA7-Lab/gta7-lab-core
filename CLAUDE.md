@@ -14,7 +14,7 @@ Na Vercel, o projeto do Core precisa de **Root Directory = `core`** (e cada enti
 core/                             <- este projeto (a cidade)
 entities/bank/                    <- MCP http em /api/mcp
 entities/supermercado/            <- MCP http (streamable) em /api/mcp
-entities/icecream/                <- MCP stdio
+entities/icecream/                <- MCP http (streamable) em /api/mcp, e stdio local
 entities/restaurante-ai-q-fome/   <- MCP stdio
 ```
 
@@ -77,12 +77,13 @@ antes de qualquer chamada.
 }
 ```
 `transport: "stdio"` usa `command` + `args` no lugar de `endpoint`.
-Tags conhecidas: `food, music, movie, event, lodging, transport, grocery, activity` (`src/lexicon.ts`).
+Tags conhecidas: `food, music, movie, event, lodging, transport, grocery, dessert, activity` (`src/lexicon.ts`).
 
 ## Status
 `npm run build && npm run smoke` passa. Registro atual: duas entidades demo (stdio) mais
-`supermercado`, primeira entidade real, por MCP http. O entrypoint HTTP foi testado
-localmente; o deploy na Vercel ainda não aconteceu.
+`supermercado` e `icecream` (Sorveteria Polar), entidades reais por MCP http.
+`icecream` responde em https://gta7-icecream.vercel.app/api/mcp e trouxe a tag `dessert`.
+O deploy do Core na Vercel ainda não aconteceu.
 
 ## Problema conhecido
 O Core manda a **frase inteira** do usuário no slot `query`. Entidades que filtram por
