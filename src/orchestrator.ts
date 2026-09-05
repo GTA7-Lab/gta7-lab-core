@@ -109,17 +109,38 @@ export async function runPlan(plan: Plan): Promise<StepResult[]> {
       if (!entity) return { step, ok: false, items: [], error: `entidade '${step.entityId}' sumiu do registro` };
       try {
         const result = await callEntityTool(entity, step.tool, step.args);
-        const { items, raw } = extractItems(result);
+        let { items, raw } = extractItems(result);
         if (result.isError) {
           return { step, ok: false, items: [], error: result.text || "a entidade devolveu isError", raw };
         }
+
+        // O Core manda a frase inteira do usuário em `query`. Entidades que
+        // filtram por token não casam nada com ela e devolvem vazio. Em vez de
+        // tentar adivinhar o vocabulário de cada uma, repetimos a busca sem
+        // `query` — no pior caso uma segunda chamada, e o que aconteceu fica
+        // explícito em `retriedWithoutQuery`.
+        let retriedWithoutQuery = false;
+        const queryParam = entity.tools.find(t => t.name === step.tool)?.argsMap.query;
+        if (items.length === 0 && queryParam !== undefined && step.args[queryParam] !== undefined) {
+          const { [queryParam]: _dropped, ...withoutQuery } = step.args;
+          const retry = await callEntityTool(entity, step.tool, withoutQuery);
+          if (!retry.isError) {
+            const second = extractItems(retry);
+            if (second.items.length > 0) {
+              items = second.items;
+              raw = second.raw;
+              retriedWithoutQuery = true;
+            }
+          }
+        }
+
         const annotated: CityItem[] = items.map(i => ({
           ...i,
           entityId: entity.id,
           entityName: entity.name,
           tool: step.tool
         }));
-        return { step, ok: true, items: annotated, raw };
+        return { step, ok: true, items: annotated, retriedWithoutQuery, raw };
       } catch (err) {
         return { step, ok: false, items: [], error: (err as Error).message };
       }
@@ -223,6 +244,8 @@ export interface OrchestrationResult {
     error?: string;
     items: CityItem[];
     droppedByConstraints: number;
+    /** a busca voltou vazia com o texto do pedido e foi repetida sem `query` */
+    retriedWithoutQuery: boolean;
   }>;
   combos: Combo[];
   notes: string[];
@@ -237,6 +260,9 @@ export async function orchestrate(request: string, opts: { limit?: number } = {}
   const results = raw.map(r => {
     const { kept, dropped } = applyConstraints(r.items, plan.slots);
     if (!r.ok && r.error) notes.push(`'${r.step.entityId}.${r.step.tool}' falhou: ${r.error}`);
+    if (r.retriedWithoutQuery) {
+      notes.push(`'${r.step.entityId}.${r.step.tool}' não casou com o texto do pedido; repetido sem 'query'`);
+    }
     return {
       entityId: r.step.entityId,
       entityName: r.step.entityName,
@@ -244,7 +270,8 @@ export async function orchestrate(request: string, opts: { limit?: number } = {}
       ok: r.ok,
       error: r.error,
       items: kept.slice(0, limit),
-      droppedByConstraints: dropped
+      droppedByConstraints: dropped,
+      retriedWithoutQuery: r.retriedWithoutQuery === true
     };
   });
 

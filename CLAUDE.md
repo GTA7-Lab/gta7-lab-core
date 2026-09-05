@@ -55,6 +55,11 @@ antes de qualquer chamada.
   por `call_entity_tool`.
 - **Filtro depois da chamada** — o Core reaplica pessoas/orçamento sobre os itens, então
   a restrição vale mesmo se a entidade ignorar os parâmetros. Item sem o campo passa.
+- **Repetir a busca sem `query`** — o Core manda a frase inteira do usuário em `query`, e
+  entidades que filtram por token não casam nada com ela. Quando uma busca volta vazia e
+  havia `query`, o Core repete sem ela. Preserva a precisão de "arroz" e evita o vazio de
+  "quero fazer compras", sem o Core precisar conhecer o vocabulário de cada entidade.
+  Sai em `retriedWithoutQuery` no resultado.
 - **Campos com apelidos** — `name/nome/title`, `pricePerPerson/ticketPrice/preco`,
   `capacity/capacidade`, `area/bairro/neighborhood`. Entidade não precisa seguir schema.
 - **Persistência em JSON.** Sem banco, sem auth, sem Docker. Na Vercel o filesystem é
@@ -81,23 +86,19 @@ antes de qualquer chamada.
 Tags conhecidas: `food, music, movie, event, lodging, transport, grocery, dessert, activity` (`src/lexicon.ts`).
 
 ## Status
-`npm run build && npm run smoke` passa. Registro atual: duas entidades demo (stdio) mais
-`supermercado` e `icecream` (Sorveteria Polar), entidades reais por MCP http.
-`icecream` responde em https://gta7-icecream.vercel.app/api/mcp e trouxe a tag `dessert`.
-O deploy do Core na Vercel ainda não aconteceu.
+No ar em **https://gta7-lab-core.vercel.app/mcp** (Streamable HTTP), com deploy
+automático a cada push. `npm run build && npm run smoke` passa. Registro: duas entidades
+demo (stdio) mais `supermercado`, `icecream` e `bank`, reais, por MCP http.
 
-## Problema conhecido
-O Core manda a **frase inteira** do usuário no slot `query`. Entidades que filtram por
-token devolvem vazio para pedidos genéricos: "Preciso fazer compras no mercado" traz 0
-produtos, enquanto `query: "arroz"` traz o item certo. As entidades demo disfarçam isso
-porque ignoram `query` quando ela não casa com nada. A correção é do lado do Core —
-limpar as palavras de intenção antes de mandar, ou não mandar `query` quando sobra só
-intenção.
+## Armadilhas da Vercel (custaram caro, não repetir)
+- O projeto usa o **preset de servidor Node**: a plataforma procura `src/server.ts` com
+  `export default` e ignora funções em `api/`. Um arquivo com esse nome e o export
+  errado derruba **todas** as rotas com `Invalid export found in module`; renomeá-lo sem
+  repor o entrypoint quebra o build com `No entrypoint found`.
+- Só o **grafo de módulos** viaja no deploy. `data/entities.json` é importado como módulo
+  por isso; lido apenas do disco, o registro chega vazio em produção.
+- **Deployment Protection** ligada devolve 302 para SSO e nenhum cliente MCP conecta.
 
 ## Próxima tarefa
-1. Resolver o `query` acima.
-2. Registrar `bank` (MCP http em `/api/mcp`) — hoje bloqueado: o deploy dele está com
-   Vercel Authentication ligada e responde 302 para SSO.
-3. `icecream` e `restaurante-ai-q-fome` são stdio; valem no Core local.
-4. Publicar o Core: depende do GitHub App da Vercel ter acesso ao repo e da integração
-   MCP enxergar o projeto. Root Directory = `core`.
+Registrar `restaurante-ai-q-fome`, a última entidade fora da cidade. O MCP dela é stdio,
+então vale no Core local; para produção precisa de endpoint http.
