@@ -130,7 +130,7 @@
   {
     "id": "bank",
     "name": "Bank of Sajo",
-    "description": "Banco da cidade GTA7 Lab: contas, saldos e transacoes (PIX, cartao, maquininha, cambio, acoes), credito e investimentos.",
+    "description": "Banco da cidade GTA7 Lab: abertura de contas, cadastro de clientes, saldos e transacoes, maquininha para o comercio, pagamento de contas, cartoes, financiamento de imovel e veiculo, e investimentos.",
     "transport": "http",
     "endpoint": "https://gta7-lab-bank-tbone3.vercel.app/api/mcp",
     "tags": [
@@ -146,7 +146,72 @@
         }
       },
       {
+        "name": "list_services",
+        "kind": "search",
+        "argsMap": {
+          "query": "category"
+        }
+      },
+      {
+        "name": "list_customers",
+        "kind": "search",
+        "argsMap": {
+          "query": "search",
+          "limit": "limit"
+        }
+      },
+      {
+        "name": "list_products",
+        "kind": "other",
+        "argsMap": {}
+      },
+      {
         "name": "get_account_balance",
+        "kind": "other",
+        "argsMap": {}
+      },
+      {
+        "name": "get_customer",
+        "kind": "other",
+        "argsMap": {}
+      },
+      {
+        "name": "open_account",
+        "kind": "other",
+        "argsMap": {}
+      },
+      {
+        "name": "create_customer",
+        "kind": "other",
+        "argsMap": {}
+      },
+      {
+        "name": "update_customer",
+        "kind": "other",
+        "argsMap": {}
+      },
+      {
+        "name": "delete_customer",
+        "kind": "other",
+        "argsMap": {}
+      },
+      {
+        "name": "send_pix",
+        "kind": "other",
+        "argsMap": {}
+      },
+      {
+        "name": "pay_bill",
+        "kind": "other",
+        "argsMap": {}
+      },
+      {
+        "name": "charge_customer",
+        "kind": "other",
+        "argsMap": {}
+      },
+      {
+        "name": "issue_card",
         "kind": "other",
         "argsMap": {}
       },
@@ -156,7 +221,12 @@
         "argsMap": {}
       },
       {
-        "name": "send_pix",
+        "name": "request_loan",
+        "kind": "other",
+        "argsMap": {}
+      },
+      {
+        "name": "invest",
         "kind": "other",
         "argsMap": {}
       }
