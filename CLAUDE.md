@@ -1,0 +1,91 @@
+# GTA7 Lab — Core Orchestrator (a cidade)
+
+## Objetivo
+Este repositório **é a cidade** da GTA7 Lab, não uma entidade. Ele é um servidor MCP
+(consumido por Claude/ChatGPT) que também age como **cliente MCP** das entidades
+registradas (restaurante, casa de shows, cinema, hotel, transporte...), escolhe quais
+entidades atendem um pedido, chama as tools delas e combina os resultados.
+
+## Layout do repositório
+`ericmgomes/gta7-lab` é um monorepo com uma pasta por projeto. O Core vive em `core/`;
+cada entidade tem a sua. Na Vercel, o projeto do Core precisa de **Root Directory = `core`**.
+```
+core/                    <- este projeto (a cidade)
+bank/                    <- MCP http em /api/mcp
+supermercado/            <- MCP http (streamable) em /api/mcp
+icecream/                <- MCP stdio
+restaurante-ai-q-fome/   <- MCP stdio
+```
+
+## Arquitetura
+```
+pedido em linguagem natural
+  -> slots.ts      extrai people / maxPricePerPerson / when / near  (regex)
+  -> lexicon.ts    detecta tags de capacidade                       (palavra-chave -> tag)
+  -> orchestrator  escolhe entidades por interseção de tags, traduz slots via argsMap
+  -> client.ts     conecta nos MCPs das entidades e chama as tools em paralelo
+  -> orchestrator  aplica restrições nos itens e monta combinações entre entidades
+```
+Nada de agente autônomo: o plano é determinístico e inspecionável por `plan_request`
+antes de qualquer chamada.
+
+## Arquivos principais
+| Arquivo | Papel |
+|---|---|
+| `src/types.ts` | schemas zod de `Entity`, slots canônicos, tipos de plano/resultado |
+| `src/registry.ts` | CRUD do registro, persistido em `data/entities.json` |
+| `src/lexicon.ts` | palavra-chave -> tag, e expansão de tags genéricas (`activity`) |
+| `src/slots.ts` | extração de restrições do texto |
+| `src/client.ts` | pool de clientes MCP (http e stdio) + normalização de resultados |
+| `src/orchestrator.ts` | plano, execução, filtros e combinações |
+| `src/server.ts` | as 9 MCP tools do Core |
+| `src/stdio.ts` | entrypoint local (stdio) |
+| `api/mcp.ts` | entrypoint HTTP para a Vercel (`/mcp`, streamable http stateless) |
+| `src/entities/*.ts` | duas entidades **demo** locais, só para desenvolvimento |
+| `scripts/smoke.ts` | prova os critérios de sucesso ponta a ponta |
+
+## Decisões importantes
+- **`argsMap` no registro** — o Core tem slots canônicos (`query`, `people`,
+  `maxPricePerPerson`, `when`, `near`, `limit`) e cada entidade mapeia esses slots para
+  os nomes de parâmetro das próprias tools. É isso que mantém o orquestrador genérico:
+  adicionar uma entidade é editar JSON, não código.
+- **`kind: "search"`** marca as tools que o orquestrador pode chamar sozinho. O resto só
+  por `call_entity_tool`.
+- **Filtro depois da chamada** — o Core reaplica pessoas/orçamento sobre os itens, então
+  a restrição vale mesmo se a entidade ignorar os parâmetros. Item sem o campo passa.
+- **Campos com apelidos** — `name/nome/title`, `pricePerPerson/ticketPrice/preco`,
+  `capacity/capacidade`, `area/bairro/neighborhood`. Entidade não precisa seguir schema.
+- **Persistência em JSON.** Sem banco, sem auth, sem Docker. Na Vercel o filesystem é
+  somente-leitura: as tools de escrita valem só durante a requisição e devolvem `warning`.
+
+## Formato de registro (`data/entities.json`)
+```json
+{
+  "id": "restaurants",
+  "name": "Restaurants",
+  "description": "Serviço de restaurantes da GTA7 Lab",
+  "transport": "http",
+  "endpoint": "https://restaurants.example/mcp",
+  "tags": ["food"],
+  "tools": [
+    { "name": "search_restaurants", "kind": "search",
+      "argsMap": { "query": "query", "people": "partySize", "maxPricePerPerson": "maxPrice" } },
+    { "name": "get_restaurant", "kind": "detail", "argsMap": {} }
+  ],
+  "enabled": true
+}
+```
+`transport: "stdio"` usa `command` + `args` no lugar de `endpoint`.
+Tags conhecidas: `food, music, movie, event, lodging, transport, activity` (`src/lexicon.ts`).
+
+## Status
+Primeira versão funcionando. `npm run build && npm run smoke` passa: duas entidades
+registradas, tools descobertas via MCP, três cenários orquestrados e CRUD verificado.
+Entrypoint HTTP testado localmente.
+
+## Próxima tarefa
+Registrar as entidades reais do monorepo no lugar das demo. `bank` e `supermercado` já
+falam MCP em http (`/api/mcp`) — falta só a URL de deploy de cada uma para virar
+`endpoint`. `icecream` e `restaurante-ai-q-fome` são stdio, então valem no Core local.
+Publicar na Vercel depende de duas permissões fora do código: o GitHub App da Vercel
+precisa de acesso ao repo, e a integração MCP precisa enxergar o projeto `gta7-lab`.

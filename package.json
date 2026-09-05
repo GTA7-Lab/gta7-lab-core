@@ -1,0 +1,24 @@
+{
+  "name": "gta7-lab-city",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Core Orchestrator da GTA7 Lab: servidor MCP que registra entidades da cidade e orquestra as MCP tools delas.",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/src/stdio.js",
+    "dev": "tsx src/stdio.ts",
+    "smoke": "node dist/scripts/smoke.js",
+    "entity:restaurants": "node dist/src/entities/restaurants.js",
+    "entity:venues": "node dist/src/entities/venues.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.20.0",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.0",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.2"
+  }
+}
