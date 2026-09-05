@@ -278,7 +278,7 @@ export function createCoreServer(): McpServer {
     async ({ palavra_magica }) => {
       const permitido = checkMagicWord(palavra_magica);
       if (!permitido.ok) return say(permitido.reason, true);
-      return say(presentResidents(listResidents()));
+      return say(presentResidents(await listResidents()));
     }
   );
 
@@ -292,7 +292,7 @@ export function createCoreServer(): McpServer {
     async ({ id, palavra_magica }) => {
       const permitido = checkMagicWord(palavra_magica);
       if (!permitido.ok) return say(permitido.reason, true);
-      const morador = getResident(id);
+      const morador = await getResident(id);
       return morador ? say(presentResident(morador)) : fail(`não encontrei ninguém com o apelido '${id}' na cidade`);
     }
   );
@@ -318,7 +318,7 @@ export function createCoreServer(): McpServer {
       const permitido = checkMagicWord(palavra_magica);
       if (!permitido.ok) return say(permitido.reason, true);
       try {
-        const { resident, warning } = addResident(dados);
+        const { resident, warning } = await addResident(dados);
         return say(presentResidentAdded(resident, warning));
       } catch (err) {
         return fail(err);
@@ -341,7 +341,7 @@ export function createCoreServer(): McpServer {
       const permitido = checkMagicWord(palavra_magica);
       if (!permitido.ok) return say(permitido.reason, true);
       try {
-        const { resident, warning } = updateResident(id, patch as Record<string, unknown>);
+        const { resident, warning } = await updateResident(id, patch as Record<string, unknown>);
         return say(presentResidentUpdated(resident, warning));
       } catch (err) {
         return fail(err);
@@ -360,7 +360,7 @@ export function createCoreServer(): McpServer {
       const permitido = checkMagicWord(palavra_magica);
       if (!permitido.ok) return say(permitido.reason, true);
       try {
-        const { resident, warning } = removeResident(id);
+        const { resident, warning } = await removeResident(id);
         return say(presentResidentRemoved(resident, warning));
       } catch (err) {
         return fail(err);

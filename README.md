@@ -53,8 +53,26 @@ rodando local:
 GTA7_MAGIC_WORD=escolha-uma npm run dev
 ```
 
-Na Vercel, defina em Settings → Environment Variables. Ler a cidade e orquestrar pedidos
-continua livre para qualquer um.
+Na Vercel, defina em Settings → Environment Variables. Consultar a cidade e orquestrar
+pedidos continua livre para qualquer um.
+
+As tools de **morador** (`list_residents`, `get_resident`, `register_resident`,
+`update_resident`, `remove_resident`) pedem a palavra mágica **até para ler**: entidade é
+serviço público da cidade, morador é gente.
+
+## Moradores gravam no próprio repositório
+
+O filesystem da Vercel é somente-leitura, então cadastrar um morador em produção precisa
+de outro lugar para gravar. Em vez de um banco, o Core escreve `data/residents.json` de
+volta neste repositório, pela API do GitHub — cada cadastro vira um commit, com `[skip ci]`
+para não disparar um deploy.
+
+Defina `GTA7_GITHUB_TOKEN` com um token de acesso que tenha permissão de **Contents:
+read and write** neste repositório. Sem ele, o Core grava no arquivo local, que é o
+comportamento em desenvolvimento.
+
+O repositório é público, então **a lista de moradores é pública**. Não guarde aí nada
+que não possa ser lido por qualquer um.
 
 ## Registrando uma entidade
 

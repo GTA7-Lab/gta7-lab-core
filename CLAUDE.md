@@ -45,6 +45,7 @@ antes de qualquer chamada.
 | `src/server.ts` | entrypoint HTTP (Vercel): `/mcp` streamable http stateless, e a landing |
 | `src/entities/*.ts` | duas entidades **demo** locais, só para desenvolvimento |
 | `src/residents.ts` | moradores da cidade, em `data/residents.json` |
+| `src/github-file.ts` | grava JSON de volta no repo pela API do GitHub |
 | `src/magic-word.ts` | confere a palavra mágica das operações protegidas |
 | `src/present.ts` | transforma tudo em texto amigável antes de sair pelo MCP |
 | `scripts/smoke.ts` | prova os critérios de sucesso ponta a ponta |
@@ -65,8 +66,15 @@ antes de qualquer chamada.
   Sai em `retriedWithoutQuery` no resultado.
 - **Campos com apelidos** — `name/nome/title`, `pricePerPerson/ticketPrice/preco`,
   `capacity/capacidade`, `area/bairro/neighborhood`. Entidade não precisa seguir schema.
-- **Persistência em JSON.** Sem banco, sem auth, sem Docker. Na Vercel o filesystem é
-  somente-leitura: as tools de escrita valem só durante a requisição e devolvem `warning`.
+- **Persistência em JSON.** Sem banco, sem Docker. Na Vercel o filesystem é somente-leitura.
+  Entidades: alterar em produção vale só durante a requisição e devolve `warning`; para
+  valer de verdade, editar `data/entities.json` e fazer deploy.
+- **Moradores gravam no próprio repo.** Com `GTA7_GITHUB_TOKEN` definido, cadastrar um
+  morador vira um commit em `data/residents.json` pela API do GitHub (`src/github-file.ts`),
+  com `[skip ci]` na mensagem para não disparar deploy a cada cadastro. Sem o token, vale o
+  arquivo em disco — que é o caso local. Escolhido no lugar de um banco para não trazer
+  serviço novo e manter o JSON como fonte da verdade, com histórico de brinde. Como o repo
+  é público, a lista de moradores é pública: não guardar aí nada realmente sensível.
 - **Palavra mágica** — conferida contra `GTA7_MAGIC_WORD` (`src/magic-word.ts`), porque o
   endpoint é público e sem isso qualquer um tira uma entidade do ar. Falha fechado: sem a
   variável definida, ninguém altera nada. Protege as **alterações de entidade**
@@ -109,6 +117,15 @@ Tags conhecidas: `food, music, movie, event, lodging, transport, grocery, desser
 ```
 `interesses` usa as mesmas tags das entidades. Hoje elas só descrevem a pessoa; ligá-las
 à orquestração (sugerir pelo gosto de quem pede) é o passo natural seguinte.
+
+## Variáveis de ambiente
+| Variável | Para quê |
+|---|---|
+| `GTA7_MAGIC_WORD` | libera as operações protegidas; sem ela ninguém altera nada |
+| `GTA7_GITHUB_TOKEN` | grava moradores no repo; sem ela, só disco (local) |
+| `GTA7_GITHUB_REPO` | padrão `GTA7-Lab/gta7-lab-core` |
+| `GTA7_GITHUB_BRANCH` | padrão `main` |
+| `GTA7_ENTITIES_FILE`, `GTA7_RESIDENTS_FILE` | apontam os JSON para outro lugar (testes) |
 
 ## Status
 No ar em **https://gta7-lab-core.vercel.app/mcp** (Streamable HTTP), com deploy
