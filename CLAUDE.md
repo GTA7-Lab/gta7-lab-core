@@ -24,7 +24,7 @@ registrados em `data/entities.json`.
 pedido em linguagem natural
   -> slots.ts      extrai people / maxPricePerPerson / when / near  (regex)
   -> lexicon.ts    detecta tags de capacidade                       (palavra-chave -> tag)
-  -> orchestrator  escolhe entidades por interseção de tags, traduz slots via argsMap
+  -> discovery     pergunta as tools ao MCP da entidade e casa os argumentos
   -> client.ts     conecta nos MCPs das entidades e chama as tools em paralelo
   -> orchestrator  aplica restrições nos itens e monta combinações entre entidades
 ```
