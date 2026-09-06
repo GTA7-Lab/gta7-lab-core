@@ -1,37 +1,5 @@
 [
   {
-    "id": "restaurants",
-    "name": "Restaurants",
-    "description": "Serviço de restaurantes da GTA7 Lab (entidade demo local).",
-    "transport": "stdio",
-    "command": "node",
-    "args": [
-      "dist/src/entities/restaurants.js"
-    ],
-    "tags": [
-      "food"
-    ],
-    "tools": [
-      {
-        "name": "search_restaurants",
-        "kind": "search",
-        "argsMap": {
-          "query": "query",
-          "people": "partySize",
-          "maxPricePerPerson": "maxPrice",
-          "near": "area",
-          "limit": "limit"
-        }
-      },
-      {
-        "name": "get_restaurant",
-        "kind": "detail",
-        "argsMap": {}
-      }
-    ],
-    "enabled": true
-  },
-  {
     "id": "rock-venue",
     "name": "Rock Live House",
     "description": "Casa de shows de rock da GTA7 Lab: agenda de shows, gêneros, preços e classificação etária.",
