@@ -186,16 +186,15 @@ Um **morador é a ficha; um agente é o mesmo morador sabendo agir**. Não há
 para não existirem duas listas de gente para conciliar. `bairro` é onde mora, `location`
 é onde está agora.
 
-- `src/shared/` são componentes **puros**: não importam nada do Core. É o que permite
-  extraí-los depois para um pacote comum sem refatoração.
+- Os contratos comuns vêm do pacote `gta7-shared`, não de cópia local.
 - `BaseAgent` não conhece entidade nenhuma. Quem chama o MCP é `executeForAgent`, que
   fica em `agents/` justamente porque conhece registro e cliente.
-- **RequestContext viaja pelo `argsMap`.** A entidade que quiser recebê-lo declara
-  `"context": "<nome do parâmetro dela>"` na tool. Assim ela opta por receber, escolhe o
-  nome, e entidades com schema estrito não quebram com um campo extra.
-- Criados só Wallet, Inventory e Memory. Location, Needs e Goals são campos simples —
-  classe para guardar uma string não paga o custo. Relationships, Schedule e Ownership
-  ficaram de fora: nada produz nem consome esses dados ainda.
+- **O RequestContext só vai quando a tool tem onde recebê-lo.** O Core procura no schema
+  dela um parâmetro `context`, `requester` ou equivalente. Quem não declara não recebe —
+  e não quebra, que é o que aconteceria empurrando um campo extra num schema estrito.
+- Wallet e Inventory vêm do pacote; Memory é local. Location, Needs e Goals são campos
+  simples — classe para guardar uma string não paga o custo. Relationships, Schedule e
+  Ownership ficaram de fora: nada produz nem consome esses dados ainda.
 - Ciclo `perceive/decide/act` existe como contrato, chamado à mão. Sem loop nem worker.
 
 **O que vai forçar decisão depois:** o estado do morador é gravado por commit no GitHub.
