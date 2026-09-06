@@ -100,6 +100,17 @@ export function extractItems(result: RawCallResult): { items: Record<string, unk
       for (const key of ["items", "results", "data", "list"]) {
         if (Array.isArray(obj[key])) return pick(obj[key]);
       }
+
+      // Cada entidade batiza a própria coleção: `shows`, `products`, `flavors`.
+      // Em vez de manter uma lista de nomes que nunca acaba, procuramos a maior
+      // lista de objetos que houver dentro. Sem isso o Core devolveria o
+      // envelope inteiro como se fosse um item só.
+      const listas = Object.values(obj)
+        .filter(Array.isArray)
+        .map(pick)
+        .filter(l => l.length > 0);
+      if (listas.length > 0) return listas.sort((a, b) => b.length - a.length)[0];
+
       return [obj];
     }
     return [];

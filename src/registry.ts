@@ -1,6 +1,7 @@
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { githubConfig, writeGithubJson } from "./github-file.js";
 import { EntitySchema, type Entity } from "./types.js";
 // Importado como módulo, e não só lido do disco: assim o registro entra no
 // grafo de módulos e sobrevive a ambientes que empacotam só isso (Vercel).
@@ -124,4 +125,33 @@ export function resetCache(): void {
 /** raiz do pacote do Core (pasta que contém data/) — usada como cwd de entidades stdio */
 export function packageRoot(): string {
   return dirname(dirname(DATA_FILE));
+}
+
+/**
+ * Admite uma entidade de verdade: entra no cache desta instância e é gravada
+ * no `data/entities.json` do repositório, quando há token.
+ *
+ * Sem `[skip ci]` de propósito. O registro viaja no bundle do deploy, então
+ * admitir uma entidade precisa gerar um deploy novo — senão a entidade some
+ * na próxima instância que subir.
+ */
+export async function commitEntity(entity: Entity): Promise<{ deployed: boolean; warning?: string }> {
+  const all = load();
+  const idx = all.findIndex(e => e.id === entity.id);
+  if (idx >= 0) all[idx] = entity;
+  else all.push(entity);
+
+  const cfg = githubConfig(join("data", "entities.json").split("\\").join("/"));
+  if (!cfg) {
+    const { warning } = persist();
+    return { deployed: false, warning };
+  }
+
+  try {
+    await writeGithubJson(cfg, all, `${entity.name} entra na cidade`, { skipDeploy: false });
+    return { deployed: true };
+  } catch (err) {
+    console.error("[registro] falha ao gravar no repositório:", err);
+    return { deployed: false, warning: "somente-leitura" };
+  }
 }

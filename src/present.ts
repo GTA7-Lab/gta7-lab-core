@@ -1,7 +1,8 @@
-import { AREA_FIELDS, DESCRIPTION_FIELDS, NAME_FIELDS, PRICE_FIELDS, numberOf, textOf } from "./fields.js";
+import { AREA_FIELDS, DESCRIPTION_FIELDS, NAME_FIELDS, PRICE_FIELDS, displayName, numberOf, textOf } from "./fields.js";
 import type { ToolInfo } from "./client.js";
 import type { Combo, OrchestrationResult } from "./orchestrator.js";
 import type { Resident } from "./residents.js";
+import type { Submission } from "./submissions.js";
 import type { CityItem, Entity, Plan } from "./types.js";
 
 /**
@@ -28,7 +29,7 @@ function lista(itens: string[]): string {
 }
 
 function describeItem(item: CityItem): string {
-  const nome = textOf(item, NAME_FIELDS) ?? String(item.id ?? "sem nome");
+  const nome = displayName(item) ?? String(item.id ?? "sem nome");
   const detalhes = [brl(numberOf(item, PRICE_FIELDS)), textOf(item, AREA_FIELDS)].filter(Boolean);
   const sobre = textOf(item, DESCRIPTION_FIELDS);
 
@@ -245,4 +246,66 @@ export function presentResidentUpdated(r: Resident, warning?: string): string {
 
 export function presentResidentRemoved(r: Resident, warning?: string): string {
   return comAviso(`${r.name} mudou de cidade.`, warning);
+}
+
+/* ----------------------------------------------------- pedidos de admissão */
+
+function submissionLine(p: Submission): string {
+  const extras = p.contato ? `\n  Contato: ${p.contato}` : "";
+  const naoUsadas = p.toolsVerificadas.filter(t => !p.tools.some(d => d.name === t));
+  const sobra = naoUsadas.length > 0 ? `\n  O MCP dela também oferece: ${lista(naoUsadas)}` : "";
+  return (
+    `• **${p.name}** (apelido: ${p.id})\n` +
+    `  ${p.description || "sem descrição"}\n` +
+    `  Quer ser chamada para: ${lista(p.tags)}\n` +
+    `  Tools conferidas no ar: ${lista(p.tools.map(t => t.name))}${sobra}\n` +
+    `  Endereço: ${p.endpoint}${extras}`
+  );
+}
+
+export function presentSubmissionAccepted(p: Submission): string {
+  return (
+    `Recebi o pedido de ${p.name} e conferi o MCP: as tools que você declarou estão no ar.\n\n` +
+    `O pedido entrou na fila com o apelido **${p.id}**. Agora é com quem cuida da cidade — ` +
+    `entrar de verdade depende de aprovação, porque as tags (${lista(p.tags)}) decidem em ` +
+    `quais pedidos você vai ser chamada, e isso afeta as outras entidades.\n\n` +
+    `Para acompanhar, use \`submission_status\` com o apelido ${p.id}.`
+  );
+}
+
+export function presentSubmissionRejected(motivo: string): string {
+  return `Não deu para aceitar o pedido: ${motivo}\n\nCorrija e mande de novo — não precisa de senha nenhuma para tentar.`;
+}
+
+export function presentSubmissions(pedidos: Submission[]): string {
+  if (pedidos.length === 0) return "Não há ninguém na fila para entrar na cidade.";
+  return (
+    `${plural(pedidos.length, "entidade quer", "entidades querem")} entrar na cidade:\n\n` +
+    `${pedidos.map(submissionLine).join("\n\n")}\n\n` +
+    `Use \`approve_entity\` ou \`deny_entity\` com o apelido.`
+  );
+}
+
+export function presentSubmissionStatus(id: string, pedido?: Submission, jaMora = false): string {
+  if (jaMora) return `Boa notícia: ${id} já faz parte da cidade e já aparece nas buscas.`;
+  if (!pedido) return `Não há pedido de '${id}' na fila, e ${id} também não está na cidade ainda.`;
+  return `O pedido de ${pedido.name} está na fila, esperando aprovação de quem cuida da cidade.`;
+}
+
+export function presentApproved(nome: string, deployed: boolean, warning?: string): string {
+  if (deployed) {
+    return `${nome} agora faz parte da cidade. A mudança foi gravada e a cidade está subindo com ela — em um minuto já aparece nas buscas.`;
+  }
+  if (warning) {
+    return (
+      `${nome} entrou na cidade aqui nesta sessão.\n\n` +
+      `Só um aviso: não consegui gravar a mudança em definitivo, então ela vale enquanto esta sessão durar.`
+    );
+  }
+  return `${nome} agora faz parte da cidade, e a mudança ficou gravada.`;
+}
+
+export function presentDenied(nome: string, motivo?: string): string {
+  const porque = motivo ? ` Motivo: ${motivo}` : "";
+  return `Recusei o pedido de ${nome} e tirei da fila.${porque}`;
 }

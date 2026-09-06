@@ -70,13 +70,23 @@ export async function readGithubJson(cfg: GithubFileConfig): Promise<RemoteFile>
  * pelo sha e nós relemos e tentamos de novo — uma vez só, para não insistir
  * num conflito de verdade.
  */
-export async function writeGithubJson(cfg: GithubFileConfig, value: unknown, message: string): Promise<void> {
+export async function writeGithubJson(
+  cfg: GithubFileConfig,
+  value: unknown,
+  message: string,
+  opts: { skipDeploy?: boolean } = {}
+): Promise<void> {
+  // `[skip ci]` evita um deploy por escrita. Serve para o que muda toda hora
+  // (moradores, fila de pedidos); admitir uma entidade, não — essa mudança
+  // precisa entrar no bundle, então o deploy é justamente o que queremos.
+  const sufixo = opts.skipDeploy === false ? "" : " [skip ci]";
+
   const enviar = async (sha?: string): Promise<Response> =>
     fetch(url(cfg), {
       method: "PUT",
       headers: { ...headers(cfg), "content-type": "application/json" },
       body: JSON.stringify({
-        message: `${message} [skip ci]`,
+        message: `${message}${sufixo}`,
         content: Buffer.from(JSON.stringify(value, null, 2) + "\n", "utf8").toString("base64"),
         branch: cfg.branch,
         sha

@@ -36,3 +36,23 @@ export function textOf(item: Record<string, unknown>, aliases: string[]): string
   const v = field(item, aliases);
   return typeof v === "string" ? v : undefined;
 }
+
+/** Chaves que nunca servem como nome visível de um item. */
+const NAO_E_NOME = /^(id|_id|uuid|slug|url|link|href|status|state|tipo|type|categoria|category|genero|genre|data|date|hora|time|created_?at|updated_?at)$/i;
+
+/**
+ * Nome do item para mostrar a uma pessoa. Tenta os apelidos conhecidos e, se
+ * nenhum casar, o primeiro texto curto que não seja identificador nem estado —
+ * a casa de shows chama de `band`, a sorveteria de `sabor`, e assim por diante.
+ * Melhor arriscar o campo errado do que responder "sem nome".
+ */
+export function displayName(item: Record<string, unknown>): string | undefined {
+  const conhecido = textOf(item, NAME_FIELDS);
+  if (conhecido) return conhecido;
+
+  for (const [chave, valor] of Object.entries(item)) {
+    if (NAO_E_NOME.test(chave)) continue;
+    if (typeof valor === "string" && valor.trim().length > 0 && valor.length <= 60) return valor;
+  }
+  return undefined;
+}

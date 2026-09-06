@@ -2,7 +2,16 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { callEntityTool, extractItems, listEntityTools } from "./client.js";
 import { LEXICON } from "./lexicon.js";
-import { getEntity, listEntities, registerEntity, removeEntity, updateEntity } from "./registry.js";
+import { commitEntity, getEntity, listEntities, registerEntity, removeEntity, updateEntity } from "./registry.js";
+import {
+  SubmissionSchema,
+  addSubmission,
+  getSubmission,
+  listSubmissions,
+  removeSubmission,
+  submissionToEntity,
+  verifySubmission
+} from "./submissions.js";
 import { buildPlan, orchestrate } from "./orchestrator.js";
 import { checkMagicWord } from "./magic-word.js";
 import { addResident, getResident, listResidents, removeResident, updateResident } from "./residents.js";
@@ -13,6 +22,8 @@ import {
   presentError,
   presentOrchestration,
   presentPlan,
+  presentApproved,
+  presentDenied,
   presentRegistered,
   presentRemoved,
   presentResident,
@@ -20,6 +31,10 @@ import {
   presentResidentRemoved,
   presentResidentUpdated,
   presentResidents,
+  presentSubmissionAccepted,
+  presentSubmissionRejected,
+  presentSubmissionStatus,
+  presentSubmissions,
   presentToolCall,
   presentUpdated
 } from "./present.js";
@@ -257,6 +272,134 @@ export function createCoreServer(): McpServer {
     async ({ request, limit }) => {
       try {
         return say(presentOrchestration(await orchestrate(request, { limit })));
+      } catch (err) {
+        return fail(err);
+      }
+    }
+  );
+
+  // --------------------------------------------------- entrar na cidade
+
+  server.registerTool(
+    "submit_entity",
+    {
+      title: "Pedir para entrar na cidade",
+      description:
+        "Uma entidade se candidata a fazer parte da cidade. Não precisa de senha: qualquer serviço MCP " +
+        "pode pedir. O Core conecta no endereço informado e confere que as tools existem mesmo antes de " +
+        "aceitar o pedido. Entrar de verdade depende da aprovação de quem cuida da cidade.",
+      inputSchema: {
+        id: z.string().describe("apelido único na cidade, minúsculo (ex.: 'rock-venue')"),
+        name: z.string().describe("nome que aparece para as pessoas"),
+        description: z.string().optional(),
+        endpoint: z.string().describe("URL do seu MCP, acessível pela internet (Streamable HTTP)"),
+        tags: z
+          .array(z.string())
+          .describe(`em que tipo de pedido você quer ser chamada; use as tags da cidade: ${Object.keys(LEXICON).join(", ")}`),
+        tools: z.array(entityToolShape).describe("suas tools; pelo menos uma com kind 'search'"),
+        contato: z.string().optional().describe("quem procurar se houver dúvida")
+      }
+    },
+    async input => {
+      let pedido;
+      try {
+        pedido = SubmissionSchema.parse({ ...input, enviadoEm: new Date().toISOString().slice(0, 10) });
+      } catch (err) {
+        return fail(err);
+      }
+      if (getEntity(pedido.id)) {
+        return say(`${pedido.id} já faz parte da cidade. Se quer mudar algo, fale com quem cuida da cidade.`, true);
+      }
+
+      const conferido = await verifySubmission(pedido);
+      if (!conferido.ok) return say(presentSubmissionRejected(conferido.reason), true);
+
+      pedido.toolsVerificadas = conferido.toolsVerificadas;
+      try {
+        await addSubmission(pedido);
+        return say(presentSubmissionAccepted(pedido));
+      } catch (err) {
+        return fail(err);
+      }
+    }
+  );
+
+  server.registerTool(
+    "submission_status",
+    {
+      title: "Ver o andamento do meu pedido",
+      description: "Diz se um pedido de admissão ainda está na fila, já foi aceito ou não existe.",
+      inputSchema: { id: z.string() }
+    },
+    async ({ id }) => {
+      if (getEntity(id)) return say(presentSubmissionStatus(id, undefined, true));
+      return say(presentSubmissionStatus(id, await getSubmission(id)));
+    }
+  );
+
+  server.registerTool(
+    "list_submissions",
+    {
+      title: "Ver quem quer entrar",
+      description: "Lista os pedidos de admissão esperando decisão. Precisa da palavra mágica.",
+      inputSchema: { palavra_magica: palavraMagica }
+    },
+    async ({ palavra_magica }) => {
+      const permitido = checkMagicWord(palavra_magica);
+      if (!permitido.ok) return say(permitido.reason, true);
+      return say(presentSubmissions(await listSubmissions()));
+    }
+  );
+
+  server.registerTool(
+    "approve_entity",
+    {
+      title: "Admitir uma entidade",
+      description:
+        "Aceita um pedido da fila e coloca a entidade na cidade de verdade. Precisa da palavra mágica.",
+      inputSchema: { palavra_magica: palavraMagica, id: z.string() }
+    },
+    async ({ id, palavra_magica }) => {
+      const permitido = checkMagicWord(palavra_magica);
+      if (!permitido.ok) return say(permitido.reason, true);
+      try {
+        const pedido = await getSubmission(id);
+        if (!pedido) return fail(`não há pedido de '${id}' na fila`);
+
+        // Reconfere antes de admitir: entre o pedido e a decisão pode ter caído.
+        const conferido = await verifySubmission(pedido);
+        if (!conferido.ok) {
+          return say(`Não admiti ${pedido.name} porque ${conferido.reason}`, true);
+        }
+
+        const { deployed, warning } = await commitEntity(submissionToEntity(pedido));
+        await removeSubmission(id, "Admitida na cidade");
+        return say(presentApproved(pedido.name, deployed, warning));
+      } catch (err) {
+        return fail(err);
+      }
+    }
+  );
+
+  server.registerTool(
+    "deny_entity",
+    {
+      title: "Recusar um pedido",
+      description: "Tira um pedido da fila sem admitir a entidade. Precisa da palavra mágica.",
+      inputSchema: {
+        palavra_magica: palavraMagica,
+        id: z.string(),
+        motivo: z.string().optional().describe("o que a entidade precisa corrigir para tentar de novo")
+      }
+    },
+    async ({ id, motivo, palavra_magica }) => {
+      const permitido = checkMagicWord(palavra_magica);
+      if (!permitido.ok) return say(permitido.reason, true);
+      try {
+        const pedido = await getSubmission(id);
+        if (!pedido) return fail(`não há pedido de '${id}' na fila`);
+        await removeSubmission(id, "Pedido recusado");
+        return say(presentDenied(pedido.name, motivo));
       } catch (err) {
         return fail(err);
       }

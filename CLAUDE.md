@@ -40,10 +40,11 @@ antes de qualquer chamada.
 | `src/slots.ts` | extração de restrições do texto |
 | `src/client.ts` | pool de clientes MCP (http e stdio) + normalização de resultados |
 | `src/orchestrator.ts` | plano, execução, filtros e combinações |
-| `src/mcp-server.ts` | as 14 MCP tools do Core |
+| `src/mcp-server.ts` | as 19 MCP tools do Core |
 | `src/stdio.ts` | entrypoint local (stdio) |
 | `src/server.ts` | entrypoint HTTP (Vercel): `/mcp` streamable http stateless, e a landing |
 | `src/entities/*.ts` | duas entidades **demo** locais, só para desenvolvimento |
+| `src/submissions.ts` | fila de entidades pedindo para entrar, em `data/submissions.json` |
 | `src/residents.ts` | moradores da cidade, em `data/residents.json` |
 | `src/github-file.ts` | grava JSON de volta no repo pela API do GitHub |
 | `src/magic-word.ts` | confere a palavra mágica das operações protegidas |
@@ -125,7 +126,7 @@ Tags conhecidas: `food, music, movie, event, lodging, transport, grocery, desser
 | `GTA7_GITHUB_TOKEN` | grava moradores no repo; sem ela, só disco (local) |
 | `GTA7_GITHUB_REPO` | padrão `GTA7-Lab/gta7-lab-core` |
 | `GTA7_GITHUB_BRANCH` | padrão `main` |
-| `GTA7_ENTITIES_FILE`, `GTA7_RESIDENTS_FILE` | apontam os JSON para outro lugar (testes) |
+| `GTA7_ENTITIES_FILE`, `GTA7_RESIDENTS_FILE`, `GTA7_SUBMISSIONS_FILE` | apontam os JSON para outro lugar (testes) |
 
 ## Status
 No ar em **https://gta7-lab-core.vercel.app/mcp** (Streamable HTTP), com deploy
@@ -144,3 +145,24 @@ demo (stdio) mais `supermercado`, `icecream` e `bank`, reais, por MCP http.
 ## Próxima tarefa
 Registrar `restaurante-ai-q-fome`, a última entidade fora da cidade. O MCP dela é stdio,
 então vale no Core local; para produção precisa de endpoint http.
+
+## Como uma entidade entra na cidade
+Tudo por MCP; ninguém edita o JSON de ninguém.
+
+1. A entidade chama **`submit_entity`** — aberto, sem palavra mágica. O Core conecta no
+   `endpoint` declarado, chama `listTools` e confere que as tools prometidas existem.
+   Se não existem, ou se nenhuma é `kind: "search"`, o pedido é recusado na hora com o
+   motivo. Aceito, entra em `data/submissions.json`.
+2. `submission_status` (aberto) deixa a entidade acompanhar o próprio pedido.
+3. Quem cuida da cidade usa **`list_submissions`**, **`approve_entity`** e
+   **`deny_entity`**, todos com a palavra mágica.
+
+**Por que não aceitar direto:** as `tags` são recurso compartilhado — quem reivindica
+muitas passa a ser chamada em quase todo pedido e polui o resultado das outras. Esse
+julgamento não dá para automatizar. O que dá é a checagem de honestidade, e é o que o
+`submit_entity` faz. Além disso, a palavra mágica atual protege tudo junto: se
+circulasse para as entidades se cadastrarem, quem entra também removeria as outras.
+
+`approve_entity` grava o registro **sem** `[skip ci]`, de propósito: o `data/entities.json`
+viaja no bundle, então admitir alguém precisa gerar deploy. A fila de pedidos e os
+moradores usam `[skip ci]`, porque mudam demais para valer um deploy cada.

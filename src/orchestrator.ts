@@ -2,7 +2,7 @@ import { callEntityTool, extractItems } from "./client.js";
 import { FOOD_TAGS, detectTags, expandTags } from "./lexicon.js";
 import { listEntities } from "./registry.js";
 import { NEAR_RE, extractSlots } from "./slots.js";
-import { AREA_FIELDS, CAPACITY_FIELDS, NAME_FIELDS, PRICE_FIELDS, numberOf, textOf } from "./fields.js";
+import { AREA_FIELDS, CAPACITY_FIELDS, PRICE_FIELDS, displayName, numberOf, textOf } from "./fields.js";
 import type { CityItem, Entity, Plan, PlanStep, RequestSlots, StepResult } from "./types.js";
 
 const DEFAULT_LIMIT = 5;
@@ -154,7 +154,7 @@ export interface Combo {
 function summarize(item: CityItem) {
   return {
     entityId: item.entityId,
-    name: textOf(item, NAME_FIELDS) ?? String(item.id ?? "(sem nome)"),
+    name: displayName(item) ?? String(item.id ?? "(sem nome)"),
     area: textOf(item, AREA_FIELDS),
     pricePerPerson: numberOf(item, PRICE_FIELDS)
   };
