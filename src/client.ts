@@ -103,13 +103,15 @@ export function extractItems(result: RawCallResult): { items: Record<string, unk
 
       // Cada entidade batiza a própria coleção: `shows`, `products`, `flavors`.
       // Em vez de manter uma lista de nomes que nunca acaba, procuramos a maior
-      // lista de objetos que houver dentro. Sem isso o Core devolveria o
-      // envelope inteiro como se fosse um item só.
-      const listas = Object.values(obj)
-        .filter(Array.isArray)
-        .map(pick)
-        .filter(l => l.length > 0);
-      if (listas.length > 0) return listas.sort((a, b) => b.length - a.length)[0];
+      // lista de objetos que houver dentro.
+      const arrays = Object.values(obj).filter(Array.isArray);
+      if (arrays.length > 0) {
+        // Ter uma lista dentro, ainda que vazia, já diz que isto é um envelope
+        // de resultados. Busca sem resultado é zero itens — devolver o envelope
+        // faria "nenhum show hoje" virar um item chamado "Rock Live House".
+        const listas = arrays.map(pick).filter(l => l.length > 0);
+        return listas.length > 0 ? listas.sort((a, b) => b.length - a.length)[0] : [];
+      }
 
       return [obj];
     }
