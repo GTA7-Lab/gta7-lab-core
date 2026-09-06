@@ -32,7 +32,40 @@ export const ResidentSchema = z.object({
   bairro: z.string().optional(),
   /** o que a pessoa gosta, usando as mesmas tags da cidade (food, music, ...) */
   interesses: z.array(z.string()).default([]),
-  desde: z.string().optional()
+  desde: z.string().optional(),
+
+  // --- estado de agente ---------------------------------------------------
+  // Um morador é a ficha; um agente é o mesmo morador sabendo agir. Em vez de
+  // manter duas listas de gente para conciliar, a ficha ganhou o estado. Tudo
+  // tem default, então quem já estava cadastrado continua válido.
+
+  /** que tipo de agente é: morador, comerciante, visitante... */
+  type: z.string().default("resident"),
+  status: z.enum(["active", "away", "inactive"]).default("active"),
+  /** em que papel ele fala com as entidades */
+  roles: z.array(z.string()).default(["customer"]),
+  /** onde está agora (id textual, sem mapa); `bairro` é onde mora */
+  location: z.string().optional(),
+  currentActivity: z.string().optional(),
+  wallet: z.object({ balance: z.number() }).default({ balance: 0 }),
+  inventory: z
+    .array(z.object({ itemId: z.string(), quantity: z.number(), name: z.string().optional() }))
+    .default([]),
+  needs: z
+    .object({ energy: z.number(), hunger: z.number(), social: z.number(), fun: z.number() })
+    .default({ energy: 100, hunger: 0, social: 50, fun: 50 }),
+  goals: z.array(z.string()).default([]),
+  memory: z
+    .array(
+      z.object({
+        at: z.string(),
+        kind: z.string(),
+        text: z.string(),
+        data: z.record(z.unknown()).optional()
+      })
+    )
+    .default([]),
+  metadata: z.record(z.unknown()).default({})
 });
 
 export type Resident = z.infer<typeof ResidentSchema>;

@@ -10,7 +10,8 @@
     "dev": "tsx src/stdio.ts",
     "smoke": "node dist/scripts/smoke.js",
     "entity:restaurants": "node dist/src/entities/restaurants.js",
-    "entity:venues": "node dist/src/entities/venues.js"
+    "entity:venues": "node dist/src/entities/venues.js",
+    "agents": "node dist/scripts/agents-check.js"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.20.0",

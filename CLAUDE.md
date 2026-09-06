@@ -49,7 +49,12 @@ antes de qualquer chamada.
 | `src/github-file.ts` | grava JSON de volta no repo pela API do GitHub |
 | `src/magic-word.ts` | confere a palavra mágica das operações protegidas |
 | `src/present.ts` | transforma tudo em texto amigável antes de sair pelo MCP |
+| `src/shared/*.ts` | componentes reutilizáveis (Wallet, Inventory, Memory, RequestContext) |
+| `src/agents/base-agent.ts` | morador que sabe agir: componentes, ciclo, RequestContext |
+| `src/agents/resident-agent.ts` | agente concreto de teste |
+| `src/agents/execute.ts` | ponte agente -> entidade MCP |
 | `scripts/smoke.ts` | prova os critérios de sucesso ponta a ponta |
+| `scripts/agents-check.ts` | prova a fundação de agentes (`npm run agents`) |
 
 ## Decisões importantes
 - **`argsMap` no registro** — o Core tem slots canônicos (`query`, `people`,
@@ -166,3 +171,25 @@ circulasse para as entidades se cadastrarem, quem entra também removeria as out
 `approve_entity` grava o registro **sem** `[skip ci]`, de propósito: o `data/entities.json`
 viaja no bundle, então admitir alguém precisa gerar deploy. A fila de pedidos e os
 moradores usam `[skip ci]`, porque mudam demais para valer um deploy cada.
+
+## Agentes (fundação)
+Um **morador é a ficha; um agente é o mesmo morador sabendo agir**. Não há
+`agents.json`: o estado de agente foi acrescentado ao `ResidentSchema`, tudo com default,
+para não existirem duas listas de gente para conciliar. `bairro` é onde mora, `location`
+é onde está agora.
+
+- `src/shared/` são componentes **puros**: não importam nada do Core. É o que permite
+  extraí-los depois para um pacote comum sem refatoração.
+- `BaseAgent` não conhece entidade nenhuma. Quem chama o MCP é `executeForAgent`, que
+  fica em `agents/` justamente porque conhece registro e cliente.
+- **RequestContext viaja pelo `argsMap`.** A entidade que quiser recebê-lo declara
+  `"context": "<nome do parâmetro dela>"` na tool. Assim ela opta por receber, escolhe o
+  nome, e entidades com schema estrito não quebram com um campo extra.
+- Criados só Wallet, Inventory e Memory. Location, Needs e Goals são campos simples —
+  classe para guardar uma string não paga o custo. Relationships, Schedule e Ownership
+  ficaram de fora: nada produz nem consome esses dados ainda.
+- Ciclo `perceive/decide/act` existe como contrato, chamado à mão. Sem loop nem worker.
+
+**O que vai forçar decisão depois:** o estado do morador é gravado por commit no GitHub.
+Serve para cadastro, que é raro. Se um dia houver ciclo automático, seria um commit por
+passo do agente — aí o armazenamento precisa mudar.
