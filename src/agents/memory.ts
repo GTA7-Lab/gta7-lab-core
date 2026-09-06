@@ -1,5 +1,7 @@
 /**
- * Memória. Componente compartilhado: uma lista de acontecimentos em ordem,
+ * Memória do agente. Fica em `agents/`, não em `shared/`: é cognição de
+ * morador, não conceito do mundo — nenhuma entidade tem uso para ela. Uma
+ * lista de acontecimentos em ordem,
  * com um teto para não crescer sem fim — o estado do agente é serializado
  * inteiro a cada gravação, então memória infinita viraria arquivo infinito.
  */

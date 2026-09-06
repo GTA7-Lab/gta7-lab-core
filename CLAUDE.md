@@ -49,7 +49,8 @@ antes de qualquer chamada.
 | `src/github-file.ts` | grava JSON de volta no repo pela API do GitHub |
 | `src/magic-word.ts` | confere a palavra mágica das operações protegidas |
 | `src/present.ts` | transforma tudo em texto amigável antes de sair pelo MCP |
-| `src/shared/*.ts` | componentes reutilizáveis (Wallet, Inventory, Memory, RequestContext) |
+| `src/shared/*.ts` | superfície pública: RequestContext, Wallet, Inventory |
+| `src/agents/memory.ts` | memória do agente (cognição, não conceito do mundo) |
 | `src/agents/base-agent.ts` | morador que sabe agir: componentes, ciclo, RequestContext |
 | `src/agents/resident-agent.ts` | agente concreto de teste |
 | `src/agents/execute.ts` | ponte agente -> entidade MCP |
@@ -193,3 +194,34 @@ para não existirem duas listas de gente para conciliar. `bairro` é onde mora, 
 **O que vai forçar decisão depois:** o estado do morador é gravado por commit no GitHub.
 Serve para cadastro, que é raro. Se um dia houver ciclo automático, seria um commit por
 passo do agente — aí o armazenamento precisa mudar.
+
+## `shared` é superfície pública
+Uma Entity de outro repositório pode consumir os contratos comuns da cidade:
+
+```bash
+npm install github:GTA7-Lab/gta7-lab-core
+```
+```ts
+import { createRequestContext, Wallet, type RequestContext } from "gta7-lab-core/shared";
+```
+
+O `exports` do `package.json` expõe **só** `./shared`. Orquestrador, registro de entidades
+e agentes não são importáveis de fora — testado: `import("gta7-lab-core/dist/src/orchestrator.js")`
+falha. Entity que precisasse dessas partes seria sinal de separação errada.
+
+Regra que sustenta isso: **nada em `src/shared/` importa nada do Core.** `npm run agents`
+verifica isso a cada execução varrendo os imports, porque é o tipo de invariante que se
+perde no primeiro atalho.
+
+Compartilhar modelo é uma coisa; **comunicação entre projetos continua sendo MCP, sempre.**
+`shared` distribui tipos e componentes locais, nunca substitui a chamada MCP.
+
+**O que entrou e por quê:** `RequestContext` (é o contrato que Entity precisa para ler quem
+pede), `Wallet` e `Inventory` (loja tem saldo e estoque tanto quanto morador). `Memory`
+saiu de `shared` para `agents/`: é cognição de morador, e nenhuma entidade tem uso para
+ela. `Schedule`, `Ownership`, `Relationships` e `Needs` ficaram de fora — nada produz nem
+consome esses dados hoje.
+
+**Instalação a partir do git:** o `prepare` compila no install, mas o npm mais novo bloqueia
+scripts de dependência por padrão. Se `dist/` não aparecer, o consumidor roda
+`npm approve-scripts gta7-lab-core` ou compila na mão.

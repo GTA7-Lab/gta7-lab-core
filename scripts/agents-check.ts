@@ -27,6 +27,23 @@ function check(label: string, cond: unknown, detalhe?: unknown): void {
   }
 }
 
+console.log("\n[0] shared não depende do Core");
+{
+  const { readdirSync, readFileSync } = await import("node:fs");
+  const { dirname, join } = await import("node:path");
+  const { fileURLToPath } = await import("node:url");
+  const sharedDir = join(dirname(dirname(fileURLToPath(import.meta.url))), "src", "shared");
+  const fugas: string[] = [];
+  for (const arquivo of readdirSync(sharedDir).filter(f => f.endsWith(".ts"))) {
+    for (const linha of readFileSync(join(sharedDir, arquivo), "utf8").split("\n")) {
+      const m = linha.match(/^\s*(?:import|export)[^"']*from\s+["']([^"']+)["']/);
+      // Só pode importar irmão dentro de shared, ou builtin do Node.
+      if (m && !m[1].startsWith("./") && !m[1].startsWith("node:")) fugas.push(`${arquivo}: ${m[1]}`);
+    }
+  }
+  check("nenhum import para fora de shared", fugas.length === 0, fugas);
+}
+
 console.log("\n[1] criar morador e carregar como agente");
 await addResident({ id: "maria", name: "Maria", bairro: "Marina", interesses: ["music"] });
 const maria = await ResidentAgent.load("maria");
