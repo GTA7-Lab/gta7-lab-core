@@ -33,27 +33,21 @@
   },
   {
     "id": "rock-venue",
-    "name": "Casa de Shows de Rock",
-    "description": "Casa de shows de rock da GTA7 Lab (entidade demo local).",
-    "transport": "stdio",
-    "command": "node",
-    "args": [
-      "dist/src/entities/venues.js"
-    ],
+    "name": "Rock Live House",
+    "description": "Casa de shows de rock da GTA7 Lab: agenda de shows, gêneros, preços e classificação etária.",
+    "transport": "http",
+    "endpoint": "https://rock-live-house.vercel.app/api/mcp",
+    "args": [],
     "tags": [
-      "music",
-      "activity",
-      "event"
+      "music"
     ],
     "tools": [
       {
         "name": "search_shows",
         "kind": "search",
         "argsMap": {
-          "query": "query",
-          "people": "groupSize",
-          "maxPricePerPerson": "maxTicketPrice",
           "when": "date",
+          "maxPricePerPerson": "max_price",
           "limit": "limit"
         }
       },
@@ -71,6 +65,7 @@
     "description": "Supermercado da GTA7 Lab: alimentos, bebidas, limpeza e bazar, com padaria, açougue e peixaria.",
     "transport": "http",
     "endpoint": "https://gta7-lab-supermercado-b-on-d.vercel.app/api/mcp",
+    "args": [],
     "tags": [
       "grocery"
     ],
@@ -102,6 +97,7 @@
     "description": "Sorveteria artesanal da GTA7 Lab: gelatos, sorbets e opcoes veganas, sem lactose e zero acucar.",
     "transport": "http",
     "endpoint": "https://gta7-icecream.vercel.app/api/mcp",
+    "args": [],
     "tags": [
       "dessert"
     ],
@@ -133,6 +129,7 @@
     "description": "Banco da cidade GTA7 Lab: contas, saldos e transacoes (PIX, cartao, maquininha, cambio, acoes), credito e investimentos.",
     "transport": "http",
     "endpoint": "https://gta7-lab-bank-tbone3.vercel.app/api/mcp",
+    "args": [],
     "tags": [
       "finance"
     ],
