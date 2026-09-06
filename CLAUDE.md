@@ -50,8 +50,8 @@ antes de qualquer chamada.
 | `src/github-file.ts` | grava JSON de volta no repo pela API do GitHub |
 | `src/magic-word.ts` | confere a palavra mágica das operações protegidas |
 | `src/present.ts` | transforma tudo em texto amigável antes de sair pelo MCP |
-| `src/shared/*.ts` | superfície pública: RequestContext, Wallet, Inventory |
 | `src/agents/memory.ts` | memória do agente (cognição, não conceito do mundo) |
+| `gta7-shared` | pacote: RequestContext, Wallet, Inventory — dependência, não código daqui |
 | `src/agents/base-agent.ts` | morador que sabe agir: componentes, ciclo, RequestContext |
 | `src/agents/resident-agent.ts` | agente concreto de teste |
 | `src/agents/execute.ts` | ponte agente -> entidade MCP |
@@ -202,33 +202,21 @@ para não existirem duas listas de gente para conciliar. `bairro` é onde mora, 
 Serve para cadastro, que é raro. Se um dia houver ciclo automático, seria um commit por
 passo do agente — aí o armazenamento precisa mudar.
 
-## `shared` é superfície pública
-Uma Entity de outro repositório pode consumir os contratos comuns da cidade:
+## Contratos comuns vêm do `gta7-shared`
+`RequestContext`, `Wallet` e `Inventory` moram em
+[GTA7-Lab/gta7-shared](https://github.com/GTA7-Lab/gta7-shared), instalado como dependência:
 
-```bash
-npm install github:GTA7-Lab/gta7-lab-city
-```
 ```ts
-import { createRequestContext, Wallet, type RequestContext } from "gta7-lab-city/shared";
+import { createRequestContext, Wallet, type RequestContext } from "gta7-shared";
 ```
 
-O `exports` do `package.json` expõe **só** `./shared`. Orquestrador, registro de entidades
-e agentes não são importáveis de fora — testado: `import("gta7-lab-city/dist/src/orchestrator.js")`
-falha. Entity que precisasse dessas partes seria sinal de separação errada.
+**Não redefinir esses contratos aqui.** Uma cópia local volta a divergir do que as Entities
+leem, e ninguém percebe até as duas pontas discordarem do formato — por isso `npm run agents`
+falha se achar uma declaração de `RequestContext` dentro de `src/`.
 
-Regra que sustenta isso: **nada em `src/shared/` importa nada do Core.** `npm run agents`
-verifica isso a cada execução varrendo os imports, porque é o tipo de invariante que se
-perde no primeiro atalho.
+O Core deixou de republicar `shared`: quem precisar instala o pacote direto. `Memory` ficou
+aqui de propósito — é cognição de agente, não conceito do mundo, e nenhuma Entity tem uso
+para ela.
 
 Compartilhar modelo é uma coisa; **comunicação entre projetos continua sendo MCP, sempre.**
-`shared` distribui tipos e componentes locais, nunca substitui a chamada MCP.
 
-**O que entrou e por quê:** `RequestContext` (é o contrato que Entity precisa para ler quem
-pede), `Wallet` e `Inventory` (loja tem saldo e estoque tanto quanto morador). `Memory`
-saiu de `shared` para `agents/`: é cognição de morador, e nenhuma entidade tem uso para
-ela. `Schedule`, `Ownership`, `Relationships` e `Needs` ficaram de fora — nada produz nem
-consome esses dados hoje.
-
-**Instalação a partir do git:** o `prepare` compila no install, mas o npm mais novo bloqueia
-scripts de dependência por padrão. Se `dist/` não aparecer, o consumidor roda
-`npm approve-scripts gta7-lab-city` ou compila na mão.

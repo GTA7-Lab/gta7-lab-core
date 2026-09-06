@@ -27,21 +27,38 @@ function check(label: string, cond: unknown, detalhe?: unknown): void {
   }
 }
 
-console.log("\n[0] shared não depende do Core");
+console.log("\n[0] contratos vêm do pacote, não de cópia local");
 {
-  const { readdirSync, readFileSync } = await import("node:fs");
+  const { readdirSync, readFileSync, statSync, existsSync } = await import("node:fs");
   const { dirname, join } = await import("node:path");
   const { fileURLToPath } = await import("node:url");
-  const sharedDir = join(dirname(dirname(fileURLToPath(import.meta.url))), "src", "shared");
-  const fugas: string[] = [];
-  for (const arquivo of readdirSync(sharedDir).filter(f => f.endsWith(".ts"))) {
-    for (const linha of readFileSync(join(sharedDir, arquivo), "utf8").split("\n")) {
-      const m = linha.match(/^\s*(?:import|export)[^"']*from\s+["']([^"']+)["']/);
-      // Só pode importar irmão dentro de shared, ou builtin do Node.
-      if (m && !m[1].startsWith("./") && !m[1].startsWith("node:")) fugas.push(`${arquivo}: ${m[1]}`);
+
+  // Subir níveis fixos daria `dist/src` quando rodando compilado, e aí a varredura
+  // olharia código gerado em vez do fonte. Ancorar no package.json acerta nos dois.
+  let dir = dirname(fileURLToPath(import.meta.url));
+  while (!existsSync(join(dir, "package.json")) && dirname(dir) !== dir) dir = dirname(dir);
+  const raiz = join(dir, "src");
+
+  // O contrato do RequestContext mora em gta7-shared. Uma cópia local aqui
+  // volta a divergir do que as Entities leem, e é o tipo de coisa que ninguém
+  // percebe até duas pontas discordarem do formato.
+  const duplicatas: string[] = [];
+  const varrer = (dir: string): void => {
+    for (const nome of readdirSync(dir)) {
+      const caminho = join(dir, nome);
+      if (statSync(caminho).isDirectory()) varrer(caminho);
+      // Ancorado no início da linha: `import { type RequestContext }` não é
+      // declaração, é justamente o uso que queremos.
+      else if (nome.endsWith(".ts") && /^\s*(export\s+)?(interface|type)\s+RequestContext\b/m.test(readFileSync(caminho, "utf8"))) {
+        duplicatas.push(nome);
+      }
     }
-  }
-  check("nenhum import para fora de shared", fugas.length === 0, fugas);
+  };
+  varrer(raiz);
+  check("nenhuma definição local de RequestContext", duplicatas.length === 0, duplicatas);
+
+  const shared = await import("gta7-shared");
+  check("o pacote exporta o contrato", typeof shared.createRequestContext === "function");
 }
 
 console.log("\n[1] criar morador e carregar como agente");

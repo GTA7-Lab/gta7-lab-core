@@ -11,19 +11,16 @@
     "smoke": "node dist/scripts/smoke.js",
     "entity:restaurants": "node dist/src/entities/restaurants.js",
     "entity:venues": "node dist/src/entities/venues.js",
-    "agents": "node dist/scripts/agents-check.js",
-    "prepare": "npm run build"
+    "agents": "node dist/scripts/agents-check.js"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.20.0",
+    "gta7-shared": "github:GTA7-Lab/gta7-shared",
     "zod": "^3.25.76"
   },
   "devDependencies": {
     "@types/node": "^22.15.0",
     "tsx": "^4.20.0",
     "typescript": "^5.9.2"
-  },
-  "exports": {
-    "./shared": "./dist/src/shared/index.js"
   }
 }

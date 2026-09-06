@@ -1,7 +1,5 @@
-import { Inventory } from "../shared/inventory.js";
+import { Inventory, Wallet, createRequestContext, type RequestContext } from "gta7-shared";
 import { Memory } from "./memory.js";
-import { createRequestContext, type RequestContext } from "../shared/request-context.js";
-import { Wallet } from "../shared/wallet.js";
 import type { Resident } from "../residents.js";
 
 /**
