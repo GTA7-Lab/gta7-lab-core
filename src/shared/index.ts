@@ -2,7 +2,7 @@
  * Superfície pública do `shared`.
  *
  * É por aqui que uma Entity de outro repositório consome os contratos comuns
- * da cidade — `import { RequestContext, Wallet } from "gta7-lab-core/shared"`.
+ * da cidade — `import { RequestContext, Wallet } from "gta7-lab-city/shared"`.
  * O `exports` do package.json expõe só este caminho: orquestrador, registro de
  * entidades e agentes ficam de fora de propósito. Entity que precisasse deles
  * seria sinal de separação errada.

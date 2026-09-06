@@ -23,7 +23,7 @@ const LANDING = `<!doctype html>
 <p>A cidade da GTA7 Lab como servidor MCP: ele conhece as entidades registradas,
 chama as MCP tools delas e combina os resultados numa resposta só.</p>
 <p>Endpoint MCP (Streamable HTTP): <code>POST /mcp</code></p>
-<p>Código: <a href="https://github.com/GTA7-Lab/gta7-lab-core">GTA7-Lab/gta7-lab-core</a> ·
+<p>Código: <a href="https://github.com/GTA7-Lab/gta7-lab-city">GTA7-Lab/gta7-lab-city</a> ·
 Entidades: <a href="https://github.com/GTA7-Lab/gta7-lab">GTA7-Lab/gta7-lab</a></p>
 `;
 

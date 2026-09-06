@@ -20,6 +20,9 @@ pedidos de exemplo e verifica o CRUD do registro.
 |---|---|
 | `list_entities` / `get_entity` | ler o registro |
 | `register_entity` / `update_entity` / `remove_entity` | CRUD do registro |
+| `submit_entity` / `submission_status` | uma entidade pede para entrar, e acompanha |
+| `list_submissions` / `approve_entity` / `deny_entity` | decidir quem entra |
+| `list_residents` … `remove_resident` | CRUD de moradores |
 | `list_city_tools` | tools que as entidades expõem **agora** (compara com o registro) |
 | `call_entity_tool` | proxy direto para uma tool de uma entidade |
 | `plan_request` | mostra o plano sem executar nada |
@@ -34,7 +37,7 @@ pedidos de exemplo e verifica o CRUD do registro.
   "mcpServers": {
     "gta7-lab-city": {
       "command": "node",
-      "args": ["C:/caminho/para/gta7-lab-core/dist/src/stdio.js"]
+      "args": ["C:/caminho/para/gta7-lab-city/dist/src/stdio.js"]
     }
   }
 }
@@ -76,43 +79,45 @@ que não possa ser lido por qualquer um.
 
 ## Registrando uma entidade
 
-Peça ao Claude/ChatGPT conectado ao Core (passando a palavra mágica), ou edite
-`data/entities.json` direto:
+A entidade pede sozinha, pela tool `submit_entity` — não precisa de senha. Ela informa
+apenas como chegar nela e em que tipo de pedido entra:
 
 ```json
 {
   "id": "cinema",
   "name": "Cinema Central",
   "description": "Cinema da GTA7 Lab",
-  "transport": "http",
   "endpoint": "https://cinema.example/mcp",
   "tags": ["movie", "activity"],
-  "tools": [
-    { "name": "search_sessions", "kind": "search",
-      "argsMap": { "query": "q", "people": "seats", "maxPricePerPerson": "maxPrice", "when": "date" } }
-  ],
-  "enabled": true
+  "contato": "quem procurar em caso de dúvida"
 }
 ```
 
-Duas coisas importam:
+**Não declare suas tools.** O Core conecta no seu endpoint e descobre pelo próprio MCP o
+que você sabe fazer. Ele chama sozinho só o que parece vitrine: nome de verbo de catálogo,
+**sem parâmetro obrigatório**, e que não seja dado de cliente. Se nada seu se encaixar, o
+pedido é recusado na hora com o motivo — porque você entraria na cidade e nunca seria
+acionado.
 
-- **`tags`** decidem quando o orquestrador aciona a entidade. Use as tags conhecidas
-  (`food, music, movie, event, lodging, transport, activity`); para uma tag nova,
-  acrescente as palavras-chave dela em `src/lexicon.ts`.
-- **`argsMap`** traduz os slots canônicos do Core (`query`, `people`,
-  `maxPricePerPerson`, `when`, `near`, `limit`) para os nomes de parâmetro da sua tool.
-  Só entram no `argsMap` os slots que a tool realmente aceita.
+As **`tags`** decidem em que pedidos você é chamado. Peça só as suas: elas são recurso
+compartilhado, e quem reivindica demais aparece em tudo e atrapalha os outros. Para uma
+tag que ainda não existe, ela precisa entrar em `src/lexicon.ts`.
 
-Sua entidade não precisa seguir um schema de resposta. O Core lê `items`/`results`/`data`
-ou um array direto, e reconhece apelidos comuns de campo (`name`/`nome`/`title`,
+Os **argumentos** são casados por apelido contra o schema das suas tools — `partySize`,
+`groupSize` e `seats` são todos entendidos como "quantidade de pessoas", e o Core só
+envia quando o tipo bate.
+
+Sua entidade não precisa seguir schema de resposta. O Core aceita um array direto, um
+objeto com `items`/`results`/`data`, ou qualquer envelope com uma lista dentro, e
+reconhece apelidos comuns de campo (`name`/`nome`/`title`/`band`,
 `pricePerPerson`/`ticketPrice`/`preco`, `capacity`/`capacidade`, `area`/`bairro`).
-Devolver `area` e um preço por pessoa faz a entidade aparecer nas combinações.
+Devolver uma área e um preço por pessoa faz você aparecer nas combinações.
+
+Entrar de verdade depende da aprovação de quem cuida da cidade.
 
 ## Deploy na Vercel
 
-O projeto já vem com `vercel.json`; `api/mcp.ts` vira a função em `/mcp`.
-O Core está na raiz deste repo, então não precisa de Root Directory especial na Vercel.
+O Core está na raiz do repo e a Vercel usa `src/server.ts` como entrypoint do servidor.
 
 ```bash
 npx vercel deploy --prod

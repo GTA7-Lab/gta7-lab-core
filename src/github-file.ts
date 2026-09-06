@@ -24,7 +24,7 @@ export function githubConfig(path: string): GithubFileConfig | undefined {
   if (!token) return undefined;
   return {
     token,
-    repo: process.env.GTA7_GITHUB_REPO?.trim() || "GTA7-Lab/gta7-lab-core",
+    repo: process.env.GTA7_GITHUB_REPO?.trim() || "GTA7-Lab/gta7-lab-city",
     branch: process.env.GTA7_GITHUB_BRANCH?.trim() || "main",
     path
   };

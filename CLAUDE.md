@@ -7,7 +7,7 @@ registradas (restaurante, casa de shows, cinema, hotel, transporte...), escolhe 
 entidades atendem um pedido, chama as tools delas e combina os resultados.
 
 ## Onde isto vive
-`GTA7-Lab/gta7-lab-core` tem só o Core, na raiz — na Vercel, sem Root Directory especial.
+`GTA7-Lab/gta7-lab-city` tem só o Core, na raiz — na Vercel, sem Root Directory especial.
 As entidades ficam em `GTA7-Lab/gta7-lab`, uma pasta cada em `entities/<id>/`. O Core não
 depende daquele repo em tempo de execução: fala com as entidades pelos endpoints MCP
 registrados em `data/entities.json`.
@@ -134,12 +134,12 @@ Tags conhecidas: `food, music, movie, event, lodging, transport, grocery, desser
 |---|---|
 | `GTA7_MAGIC_WORD` | libera as operações protegidas; sem ela ninguém altera nada |
 | `GTA7_GITHUB_TOKEN` | grava moradores no repo; sem ela, só disco (local) |
-| `GTA7_GITHUB_REPO` | padrão `GTA7-Lab/gta7-lab-core` |
+| `GTA7_GITHUB_REPO` | padrão `GTA7-Lab/gta7-lab-city` |
 | `GTA7_GITHUB_BRANCH` | padrão `main` |
 | `GTA7_ENTITIES_FILE`, `GTA7_RESIDENTS_FILE`, `GTA7_SUBMISSIONS_FILE` | apontam os JSON para outro lugar (testes) |
 
 ## Status
-No ar em **https://gta7-lab-core.vercel.app/mcp** (Streamable HTTP), com deploy
+No ar em **https://gta7-lab-city.vercel.app/mcp** (Streamable HTTP), com deploy
 automático a cada push. `npm run build && npm run smoke` passa. Registro: duas entidades
 demo (stdio) mais `supermercado`, `icecream` e `bank`, reais, por MCP http.
 
@@ -204,14 +204,14 @@ passo do agente — aí o armazenamento precisa mudar.
 Uma Entity de outro repositório pode consumir os contratos comuns da cidade:
 
 ```bash
-npm install github:GTA7-Lab/gta7-lab-core
+npm install github:GTA7-Lab/gta7-lab-city
 ```
 ```ts
-import { createRequestContext, Wallet, type RequestContext } from "gta7-lab-core/shared";
+import { createRequestContext, Wallet, type RequestContext } from "gta7-lab-city/shared";
 ```
 
 O `exports` do `package.json` expõe **só** `./shared`. Orquestrador, registro de entidades
-e agentes não são importáveis de fora — testado: `import("gta7-lab-core/dist/src/orchestrator.js")`
+e agentes não são importáveis de fora — testado: `import("gta7-lab-city/dist/src/orchestrator.js")`
 falha. Entity que precisasse dessas partes seria sinal de separação errada.
 
 Regra que sustenta isso: **nada em `src/shared/` importa nada do Core.** `npm run agents`
@@ -229,4 +229,4 @@ consome esses dados hoje.
 
 **Instalação a partir do git:** o `prepare` compila no install, mas o npm mais novo bloqueia
 scripts de dependência por padrão. Se `dist/` não aparecer, o consumidor roda
-`npm approve-scripts gta7-lab-core` ou compila na mão.
+`npm approve-scripts gta7-lab-city` ou compila na mão.
