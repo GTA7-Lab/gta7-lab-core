@@ -43,7 +43,11 @@ pedidos de exemplo e verifica o CRUD do registro.
 }
 ```
 
-**Via HTTP** (ChatGPT, Claude connectors): `POST https://<seu-deploy>.vercel.app/mcp`.
+**Via HTTP** (ChatGPT, Claude connectors): `POST https://gta7-lab-city.vercel.app/mcp`.
+
+O endereço antigo `gta7-lab-core.vercel.app/mcp` serve o mesmo projeto e continua válido.
+Se um conector travar mostrando uma lista de tools velha, adicioná-lo pelo outro endereço
+força uma descoberta nova — o servidor também atende em `/api/mcp`.
 
 ## Palavra mágica
 

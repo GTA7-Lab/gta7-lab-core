@@ -139,8 +139,10 @@ Tags conhecidas: `food, music, movie, event, lodging, transport, grocery, desser
 | `GTA7_ENTITIES_FILE`, `GTA7_RESIDENTS_FILE`, `GTA7_SUBMISSIONS_FILE` | apontam os JSON para outro lugar (testes) |
 
 ## Status
-No ar em **https://gta7-lab-city.vercel.app/mcp** (Streamable HTTP), com deploy
-automático a cada push. `npm run build && npm run smoke` passa. Registro: duas entidades
+No ar em **https://gta7-lab-city.vercel.app/mcp** (Streamable HTTP). O endereço antigo,
+`gta7-lab-core.vercel.app/mcp`, continua servindo o mesmo projeto — foi mantido de
+propósito, porque os conectores MCP já criados apontam para ele e não há redirect. Deploy
+é automático a cada push. `npm run build && npm run smoke` passa. Registro: duas entidades
 demo (stdio) mais `supermercado`, `icecream` e `bank`, reais, por MCP http.
 
 ## Armadilhas da Vercel (custaram caro, não repetir)
