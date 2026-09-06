@@ -1,1 +1,38 @@
-[]
+[
+  {
+    "id": "rock-venue",
+    "name": "Rock Live House",
+    "description": "Casa de shows de rock da GTA7 Lab: agenda de shows, gêneros, preços e classificação etária.",
+    "endpoint": "https://rock-live-house.vercel.app/api/mcp",
+    "tags": [
+      "music"
+    ],
+    "tools": [
+      {
+        "name": "search_shows",
+        "kind": "search",
+        "argsMap": {
+          "when": "date",
+          "maxPricePerPerson": "max_price",
+          "limit": "limit"
+        }
+      },
+      {
+        "name": "get_show",
+        "kind": "detail",
+        "argsMap": {}
+      }
+    ],
+    "contato": "GTA7-Lab/rock-live-house (GitHub)",
+    "enviadoEm": "2026-09-06",
+    "toolsVerificadas": [
+      "search_shows",
+      "get_show",
+      "list_customers",
+      "get_customer",
+      "create_customer",
+      "update_customer",
+      "delete_customer"
+    ]
+  }
+]
