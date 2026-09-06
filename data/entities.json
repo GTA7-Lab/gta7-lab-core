@@ -89,7 +89,7 @@
         "argsMap": {}
       }
     ],
-    "enabled": true
+    "enabled": false
   },
   {
     "id": "bank",
@@ -126,6 +126,6 @@
         "argsMap": {}
       }
     ],
-    "enabled": true
+    "enabled": false
   }
 ]
