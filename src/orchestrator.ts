@@ -75,30 +75,36 @@ export async function runPlan(plan: Plan): Promise<StepResult[]> {
       const entity = byId.get(step.entityId) as Entity | undefined;
       if (!entity) return { step, ok: false, items: [], error: `entidade '${step.entityId}' sumiu do registro` };
       try {
-        const result = await callEntityTool(entity, step.tool, step.args);
+        let result = await callEntityTool(entity, step.tool, step.args);
         let { items, raw } = extractItems(result);
-        if (result.isError) {
-          return { step, ok: false, items: [], error: result.text || "a entidade devolveu isError", raw };
-        }
 
-        // O Core manda a frase inteira do usuário em `query`. Entidades que
-        // filtram por token não casam nada com ela e devolvem vazio. Em vez de
-        // tentar adivinhar o vocabulário de cada uma, repetimos a busca sem
-        // `query` — no pior caso uma segunda chamada, e o que aconteceu fica
-        // explícito em `retriedWithoutQuery`.
-        let retriedWithoutQuery = false;
-        const queryParam = entity.tools.find(t => t.name === step.tool)?.argsMap.query;
-        if (items.length === 0 && queryParam !== undefined && step.args[queryParam] !== undefined) {
-          const { [queryParam]: _dropped, ...withoutQuery } = step.args;
-          const retry = await callEntityTool(entity, step.tool, withoutQuery);
+        // Os filtros que o Core extrai do texto são palpites: a frase inteira
+        // em `query` não casa com quem filtra por token, e uma data que a
+        // entidade valida pode recusar a chamada toda. Quando a busca falha ou
+        // volta vazia, repetimos sem os filtros — só com o limite. No pior caso
+        // uma segunda chamada, e melhor uma lista ampla do que nada.
+        let retriedSimplified = false;
+        const limitParam = entity.tools.find(t => t.name === step.tool)?.argsMap.limit;
+        const semFiltros = limitParam !== undefined && step.args[limitParam] !== undefined
+          ? { [limitParam]: step.args[limitParam] }
+          : {};
+        const tinhaFiltros = Object.keys(step.args).some(k => k !== limitParam);
+
+        if ((result.isError || items.length === 0) && tinhaFiltros) {
+          const retry = await callEntityTool(entity, step.tool, semFiltros);
           if (!retry.isError) {
             const second = extractItems(retry);
             if (second.items.length > 0) {
+              result = retry;
               items = second.items;
               raw = second.raw;
-              retriedWithoutQuery = true;
+              retriedSimplified = true;
             }
           }
+        }
+
+        if (result.isError) {
+          return { step, ok: false, items: [], error: result.text || "a entidade devolveu isError", raw };
         }
 
         const annotated: CityItem[] = items.map(i => ({
@@ -107,7 +113,7 @@ export async function runPlan(plan: Plan): Promise<StepResult[]> {
           entityName: entity.name,
           tool: step.tool
         }));
-        return { step, ok: true, items: annotated, retriedWithoutQuery, raw };
+        return { step, ok: true, items: annotated, retriedSimplified, raw };
       } catch (err) {
         return { step, ok: false, items: [], error: (err as Error).message };
       }
@@ -211,8 +217,8 @@ export interface OrchestrationResult {
     error?: string;
     items: CityItem[];
     droppedByConstraints: number;
-    /** a busca voltou vazia com o texto do pedido e foi repetida sem `query` */
-    retriedWithoutQuery: boolean;
+    /** a busca falhou ou voltou vazia com os filtros, e foi repetida sem eles */
+    retriedSimplified: boolean;
   }>;
   combos: Combo[];
   notes: string[];
@@ -227,8 +233,8 @@ export async function orchestrate(request: string, opts: { limit?: number } = {}
   const results = raw.map(r => {
     const { kept, dropped } = applyConstraints(r.items, plan.slots);
     if (!r.ok && r.error) notes.push(`'${r.step.entityId}.${r.step.tool}' falhou: ${r.error}`);
-    if (r.retriedWithoutQuery) {
-      notes.push(`'${r.step.entityId}.${r.step.tool}' não casou com o texto do pedido; repetido sem 'query'`);
+    if (r.retriedSimplified) {
+      notes.push(`'${r.step.entityId}.${r.step.tool}' não casou com os filtros do pedido; repetido sem eles`);
     }
     return {
       entityId: r.step.entityId,
@@ -238,7 +244,7 @@ export async function orchestrate(request: string, opts: { limit?: number } = {}
       error: r.error,
       items: kept.slice(0, limit),
       droppedByConstraints: dropped,
-      retriedWithoutQuery: r.retriedWithoutQuery === true
+      retriedSimplified: r.retriedSimplified === true
     };
   });
 

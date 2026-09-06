@@ -46,7 +46,13 @@ export function extractSlots(text: string): RequestSlots {
   }
 
   const when = text.match(WHEN_RE);
-  if (when) slots.when = when[1];
+  if (when) {
+    // "hoje" não serve para uma tool que valida data. Mandar o texto cru fazia
+    // a entidade recusar a chamada inteira; melhor resolver para uma data de
+    // verdade e, quando não der, não mandar nada.
+    const data = resolveWhen(when[1]);
+    if (data) slots.when = data;
+  }
 
   const near = text.match(NEAR_RE);
   if (near) {
@@ -58,4 +64,45 @@ export function extractSlots(text: string): RequestSlots {
   }
 
   return slots;
+}
+
+const DIAS_DA_SEMANA: Record<string, number> = {
+  domingo: 0, segunda: 1, terca: 2, terça: 2, quarta: 3, quinta: 4, sexta: 5, sabado: 6, sábado: 6, sab: 6, sáb: 6
+};
+
+function iso(d: Date): string {
+  return d.toISOString().slice(0, 10);
+}
+
+function somaDias(base: Date, dias: number): Date {
+  const d = new Date(base);
+  d.setDate(d.getDate() + dias);
+  return d;
+}
+
+/**
+ * Converte "hoje", "amanhã", "sábado", "fim de semana" numa data ISO.
+ *
+ * Devolve `undefined` quando não dá para resolver — e aí o Core simplesmente
+ * não manda o slot. É melhor buscar sem filtro de data do que mandar texto que
+ * a entidade recusa, derrubando a chamada inteira.
+ */
+export function resolveWhen(frase: string, hoje = new Date()): string | undefined {
+  const f = frase.toLowerCase().trim();
+
+  if (/^hoje/.test(f) || f === "esta noite" || f === "tonight") return iso(hoje);
+  if (/^amanh|^tomorrow/.test(f)) return iso(somaDias(hoje, 1));
+
+  if (/fim de semana|final de semana|weekend/.test(f)) {
+    const ateSabado = (6 - hoje.getDay() + 7) % 7;
+    return iso(somaDias(hoje, ateSabado === 0 ? 0 : ateSabado));
+  }
+
+  const dia = Object.entries(DIAS_DA_SEMANA).find(([nome]) => f.startsWith(nome));
+  if (dia) {
+    const distancia = (dia[1] - hoje.getDay() + 7) % 7;
+    return iso(somaDias(hoje, distancia === 0 ? 7 : distancia));
+  }
+
+  return undefined;
 }

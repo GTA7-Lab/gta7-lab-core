@@ -101,8 +101,8 @@ export interface StepResult {
   step: PlanStep;
   ok: boolean;
   items: CityItem[];
-  /** a busca voltou vazia com `query` e foi repetida sem ela */
-  retriedWithoutQuery?: boolean;
+  /** a busca falhou ou voltou vazia com os filtros, e foi repetida sem eles */
+  retriedSimplified?: boolean;
   error?: string;
   /** conteúdo bruto devolvido pela entidade, para depuração */
   raw?: unknown;
