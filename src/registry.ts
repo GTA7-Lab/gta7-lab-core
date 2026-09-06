@@ -20,16 +20,23 @@ const FILE_NAME = join("data", "entities.json");
  * Raiz do pacote: primeiro ancestral com package.json. Ancorar aí evita achar
  * a cópia de `data/` que o tsc emite dentro de `dist/` por causa do import.
  */
-function findDataFile(): string {
-  if (process.env.GTA7_ENTITIES_FILE) return resolve(process.env.GTA7_ENTITIES_FILE);
+/** Primeiro ancestral com package.json, a partir deste módulo. */
+function findPackageRoot(): string {
   let dir = dirname(fileURLToPath(import.meta.url));
   for (let i = 0; i < 6; i++) {
-    if (existsSync(join(dir, "package.json"))) return join(dir, FILE_NAME);
+    if (existsSync(join(dir, "package.json"))) return dir;
     const parent = dirname(dir);
     if (parent === dir) break;
     dir = parent;
   }
-  return resolve(process.cwd(), FILE_NAME);
+  return process.cwd();
+}
+
+const PACKAGE_ROOT = findPackageRoot();
+
+function findDataFile(): string {
+  if (process.env.GTA7_ENTITIES_FILE) return resolve(process.env.GTA7_ENTITIES_FILE);
+  return join(PACKAGE_ROOT, FILE_NAME);
 }
 
 const DATA_FILE = findDataFile();
@@ -122,9 +129,14 @@ export function resetCache(): void {
   writable = true;
 }
 
-/** raiz do pacote do Core (pasta que contém data/) — usada como cwd de entidades stdio */
+/**
+ * Raiz do pacote do Core — usada como cwd ao subir entidades stdio.
+ *
+ * Não deriva do caminho do JSON de propósito: apontar o registro para outro
+ * arquivo (testes) não pode mudar de onde as entidades locais são executadas.
+ */
 export function packageRoot(): string {
-  return dirname(dirname(DATA_FILE));
+  return PACKAGE_ROOT;
 }
 
 /**

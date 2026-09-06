@@ -8,9 +8,62 @@ import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { closeAll, listEntityTools } from "../src/client.js";
-import { listEntities } from "../src/registry.js";
-import { orchestrate } from "../src/orchestrator.js";
+
+/**
+ * O smoke roda contra um registro **fixo**, não contra o `data/entities.json`
+ * de verdade. O registro real é editado pelos participantes — uma entidade que
+ * muda de tag, entra ou sai fazia este teste quebrar sem nada de errado no
+ * Core. As duas entidades demo, em stdio, dão um cenário estável para provar
+ * descoberta, orquestração e combinação entre entidades diferentes.
+ */
+const FIXTURE = [
+  {
+    id: "restaurants",
+    name: "Restaurants",
+    description: "Entidade demo de restaurantes, só para teste.",
+    transport: "stdio",
+    command: "node",
+    args: ["dist/src/entities/restaurants.js"],
+    tags: ["food"],
+    tools: [
+      {
+        name: "search_restaurants",
+        kind: "search",
+        argsMap: { query: "query", people: "partySize", maxPricePerPerson: "maxPrice", near: "area", limit: "limit" }
+      },
+      { name: "get_restaurant", kind: "detail", argsMap: {} }
+    ],
+    enabled: true
+  },
+  {
+    id: "rock-venue-demo",
+    name: "Casa de Shows (demo)",
+    description: "Entidade demo de casa de shows, só para teste.",
+    transport: "stdio",
+    command: "node",
+    args: ["dist/src/entities/venues.js"],
+    tags: ["music", "activity", "event"],
+    tools: [
+      {
+        name: "search_shows",
+        kind: "search",
+        argsMap: { query: "query", people: "groupSize", maxPricePerPerson: "maxTicketPrice", when: "date", limit: "limit" }
+      },
+      { name: "get_show", kind: "detail", argsMap: {} }
+    ],
+    enabled: true
+  }
+];
+
+const fixtureFile = join(mkdtempSync(join(tmpdir(), "gta7-smoke-")), "entities.json");
+writeFileSync(fixtureFile, JSON.stringify(FIXTURE, null, 2) + "\n", "utf8");
+process.env.GTA7_ENTITIES_FILE = fixtureFile;
+
+// Import dinâmico: o registro lê o caminho do arquivo ao carregar o módulo,
+// então a variável precisa estar de pé antes.
+const { closeAll, listEntityTools } = await import("../src/client.js");
+const { listEntities } = await import("../src/registry.js");
+const { orchestrate } = await import("../src/orchestrator.js");
 
 let failures = 0;
 
