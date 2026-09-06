@@ -1,4 +1,5 @@
 import { callEntityTool, extractItems } from "../client.js";
+import { paramFor, toolsOf } from "../discovery.js";
 import { getEntity } from "../registry.js";
 import type { BaseAgent } from "./base-agent.js";
 
@@ -39,7 +40,8 @@ export async function executeForAgent(
     return { ok: false, items: [], text: "", error };
   }
 
-  const contextParam = entity.tools.find(t => t.name === toolName)?.argsMap.context;
+  const info = (await toolsOf(entity)).find(t => t.name === toolName);
+  const contextParam = info ? paramFor(info, "context") : undefined;
   const args = contextParam ? { ...input, [contextParam]: agent.createRequestContext() } : { ...input };
 
   try {

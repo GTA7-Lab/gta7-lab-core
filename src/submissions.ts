@@ -4,7 +4,8 @@ import { fileURLToPath } from "node:url";
 import { z } from "zod";
 import { listEntityTools } from "./client.js";
 import { githubConfig, readGithubJson, writeGithubJson } from "./github-file.js";
-import { EntityToolSchema, type Entity } from "./types.js";
+import { searchToolsOf } from "./discovery.js";
+import type { Entity } from "./types.js";
 import seed from "../data/submissions.json" with { type: "json" };
 
 /**
@@ -36,7 +37,6 @@ export const SubmissionSchema = z.object({
   /** só http: a cidade fala com as entidades pela rede, nunca rodando processo local */
   endpoint: z.string().url(),
   tags: z.array(z.string()).min(1),
-  tools: z.array(EntityToolSchema).min(1),
   /** quem mandou, texto livre — ajuda a saber com quem falar */
   contato: z.string().optional(),
   enviadoEm: z.string().optional(),
@@ -155,7 +155,6 @@ export async function verifySubmission(
     endpoint: pedido.endpoint,
     args: [],
     tags: pedido.tags,
-    tools: pedido.tools,
     enabled: true
   } satisfies Entity;
 
@@ -169,25 +168,24 @@ export async function verifySubmission(
     };
   }
 
-  const existentes = new Set(aoVivo.map(t => t.name));
-  const faltando = pedido.tools.map(t => t.name).filter(n => !existentes.has(n));
-  if (faltando.length > 0) {
+  if (aoVivo.length === 0) {
+    return { ok: false, reason: "o MCP respondeu, mas não expõe tool nenhuma." };
+  }
+
+  // A entidade não declara mais quais tools tem — o MCP informa. O que o Core
+  // precisa checar é se sobra alguma que ele possa chamar por conta própria ao
+  // atender um pedido; sem isso, ela entraria na cidade e nunca seria acionada.
+  const vitrine = await searchToolsOf(comoEntidade);
+  if (vitrine.length === 0) {
     return {
       ok: false,
       reason:
-        `o MCP respondeu, mas não tem ${faltando.join(", ")}. ` +
-        `O que ele oferece é: ${[...existentes].join(", ") || "nada"}.`
+        "nenhuma das tools serve como vitrine: o Core só chama sozinho o que dá para chamar sem argumento " +
+        `obrigatório e que não seja dado de cliente. O MCP oferece: ${aoVivo.map(t => t.name).join(", ")}.`
     };
   }
 
-  if (!pedido.tools.some(t => t.kind === "search")) {
-    return {
-      ok: false,
-      reason: "nenhuma tool foi marcada como de busca ('search'), então o Core nunca teria o que chamar sozinho."
-    };
-  }
-
-  return { ok: true, toolsVerificadas: [...existentes] };
+  return { ok: true, toolsVerificadas: aoVivo.map(t => t.name) };
 }
 
 export async function addSubmission(pedido: Submission): Promise<{ warning?: string }> {
@@ -216,7 +214,6 @@ export function submissionToEntity(pedido: Submission): Entity {
     endpoint: pedido.endpoint,
     args: [],
     tags: pedido.tags,
-    tools: pedido.tools,
     enabled: true
   };
 }

@@ -101,7 +101,7 @@ check("ficha original intacta", (await getResident("maria"))?.bairro === "Marina
 
 console.log("\n[6] ciclo perceber -> decidir -> agir");
 const percepcao = recarregada!.perceive();
-const decisao = recarregada!.decide(percepcao);
+const decisao = await recarregada!.decide(percepcao);
 console.log(`  decidiu: ${decisao.kind} — ${decisao.reason}`);
 check("decidiu algo coerente", ["call_entity", "idle"].includes(decisao.kind));
 const resultado = await recarregada!.act(decisao);

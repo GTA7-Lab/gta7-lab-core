@@ -55,9 +55,12 @@ export const EntitySchema = z
     /** transport stdio */
     command: z.string().optional(),
     args: z.array(z.string()).default([]),
-    /** tags de capacidade usadas pelo orquestrador para escolher entidades */
+    /**
+     * Tags de capacidade: em que tipo de pedido a entidade entra. É a única
+     * coisa que o registro declara sobre o que ela faz — quais tools existem
+     * vem do MCP dela, ver `discovery.ts`.
+     */
     tags: z.array(z.string()).default([]),
-    tools: z.array(EntityToolSchema).default([]),
     enabled: z.boolean().default(true)
   })
   .superRefine((e, ctx) => {

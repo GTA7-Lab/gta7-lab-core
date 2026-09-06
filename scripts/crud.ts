@@ -13,11 +13,10 @@ const { entity } = registerEntity({
   description: "entidade de teste",
   transport: "http",
   endpoint: "https://exemplo.gta7.lab/mcp",
-  tags: ["movie", "activity"],
-  tools: [{ name: "search_sessions", kind: "search", argsMap: { query: "q", people: "seats" } }]
+  tags: ["movie", "activity"]
 });
 assert(entity.enabled === true, "enabled deveria ter default true");
-assert(entity.tools[0].kind === "search", "kind não foi preservado");
+assert(entity.tags.includes("movie"), "tags não foram preservadas");
 
 assert(getEntity("cinema")?.name === "Cinema Central", "get_entity falhou");
 assert(listEntities().length === 1, "list_entities deveria ter 1 entidade");

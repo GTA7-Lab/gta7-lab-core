@@ -2,6 +2,7 @@ import { callEntityTool, extractItems } from "./client.js";
 import { FOOD_TAGS, detectTags, expandTags } from "./lexicon.js";
 import { listEntities } from "./registry.js";
 import { NEAR_RE, extractSlots } from "./slots.js";
+import { argsFor, paramFor, searchToolsOf, toolsOf } from "./discovery.js";
 import { AREA_FIELDS, CAPACITY_FIELDS, PRICE_FIELDS, displayName, numberOf, textOf } from "./fields.js";
 import type { CityItem, Entity, Plan, PlanStep, RequestSlots, StepResult } from "./types.js";
 
@@ -9,17 +10,12 @@ const DEFAULT_LIMIT = 5;
 
 // ---------------------------------------------------------------------- plano
 
-/** Traduz os slots canônicos para os nomes de parâmetro que a tool espera. */
-function buildArgs(tool: { argsMap: Record<string, string> }, slots: RequestSlots): Record<string, unknown> {
-  const args: Record<string, unknown> = {};
-  for (const [slot, paramName] of Object.entries(tool.argsMap)) {
-    const value = (slots as Record<string, unknown>)[slot];
-    if (value !== undefined) args[paramName] = value;
-  }
-  return args;
-}
-
-export function buildPlan(request: string, opts: { limit?: number } = {}): Plan {
+/**
+ * O registro guarda como chegar na entidade e em que pedidos ela entra
+ * (`tags`). Quais tools existem, e com que parâmetros, vem do MCP na hora —
+ * ver `discovery.ts`. Isso significa que montar o plano é uma operação de rede.
+ */
+export async function buildPlan(request: string, opts: { limit?: number } = {}): Promise<Plan> {
   const slots = extractSlots(request);
   slots.limit = opts.limit ?? DEFAULT_LIMIT;
 
@@ -30,29 +26,42 @@ export function buildPlan(request: string, opts: { limit?: number } = {}): Plan 
   const entities = listEntities({ enabledOnly: true });
   const steps: PlanStep[] = [];
 
-  for (const entity of entities) {
-    const searchTools = entity.tools.filter(t => t.kind === "search");
-    if (searchTools.length === 0) {
-      notes.push(`'${entity.id}' ignorada: nenhuma tool com kind 'search' registrada`);
-      continue;
-    }
-    const matched = entity.tags.filter(t => wanted.has(t));
-    if (detected.length > 0 && matched.length === 0) continue;
+  await Promise.all(
+    entities.map(async entity => {
+      const matched = entity.tags.filter(t => wanted.has(t));
+      if (detected.length > 0 && matched.length === 0) return;
 
-    for (const tool of searchTools) {
-      steps.push({
-        entityId: entity.id,
-        entityName: entity.name,
-        tool: tool.name,
-        matchedTags: matched,
-        args: buildArgs(tool, slots),
-        reason:
-          matched.length > 0
-            ? `tags em comum com o pedido: ${matched.join(", ")}`
-            : "nenhuma tag reconhecida no pedido; consultando todas as entidades ativas"
-      });
-    }
-  }
+      let escolhidas;
+      try {
+        escolhidas = await searchToolsOf(entity);
+      } catch (err) {
+        notes.push(`não consegui perguntar as capacidades de '${entity.id}': ${(err as Error).message}`);
+        return;
+      }
+      if (escolhidas.length === 0) {
+        notes.push(`'${entity.id}' não expõe nenhuma tool de vitrine que o Core possa chamar sozinho`);
+        return;
+      }
+
+      for (const { tool, reason } of escolhidas) {
+        steps.push({
+          entityId: entity.id,
+          entityName: entity.name,
+          tool: tool.name,
+          matchedTags: matched,
+          args: argsFor(tool, slots),
+          reason:
+            matched.length > 0
+              ? `tags em comum com o pedido: ${matched.join(", ")}; ${reason}`
+              : `nenhuma tag reconhecida no pedido; ${reason}`
+        });
+      }
+    })
+  );
+
+  // A descoberta é paralela, então a ordem chega ao sabor da rede. Ordenar
+  // mantém o plano igual entre execuções, que é o ponto de poder inspecioná-lo.
+  steps.sort((a, b) => a.entityId.localeCompare(b.entityId) || a.tool.localeCompare(b.tool));
 
   if (detected.length === 0) {
     notes.push("nenhuma tag reconhecida no pedido; o Core consultou todas as entidades ativas");
@@ -84,7 +93,8 @@ export async function runPlan(plan: Plan): Promise<StepResult[]> {
         // volta vazia, repetimos sem os filtros — só com o limite. No pior caso
         // uma segunda chamada, e melhor uma lista ampla do que nada.
         let retriedSimplified = false;
-        const limitParam = entity.tools.find(t => t.name === step.tool)?.argsMap.limit;
+        const info = (await toolsOf(entity)).find(t => t.name === step.tool);
+        const limitParam = info ? paramFor(info, "limit") : undefined;
         const semFiltros = limitParam !== undefined && step.args[limitParam] !== undefined
           ? { [limitParam]: step.args[limitParam] }
           : {};
@@ -226,7 +236,7 @@ export interface OrchestrationResult {
 
 export async function orchestrate(request: string, opts: { limit?: number } = {}): Promise<OrchestrationResult> {
   const limit = opts.limit ?? DEFAULT_LIMIT;
-  const plan = buildPlan(request, { limit });
+  const plan = await buildPlan(request, { limit });
   const raw = await runPlan(plan);
   const notes = [...plan.notes];
 

@@ -10,6 +10,9 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 /**
+ * O registro guarda só como chegar na entidade e em que pedidos ela entra; as
+ * tools vêm do MCP dela. Por isso a fixture não declara tool nenhuma.
+ *
  * O smoke roda contra um registro **fixo**, não contra o `data/entities.json`
  * de verdade. O registro real é editado pelos participantes — uma entidade que
  * muda de tag, entra ou sai fazia este teste quebrar sem nada de errado no

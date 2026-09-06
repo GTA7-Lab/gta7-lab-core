@@ -1,4 +1,5 @@
 import { listEntities } from "../registry.js";
+import { searchToolsOf } from "../discovery.js";
 import { getResident, updateResident } from "../residents.js";
 import { BaseAgent, type AgentDecision, type AgentState, type CityPerception } from "./base-agent.js";
 import { executeForAgent } from "./execute.js";
@@ -34,7 +35,7 @@ export class ResidentAgent extends BaseAgent {
     };
   }
 
-  decide(perception: CityPerception): AgentDecision {
+  async decide(perception: CityPerception): Promise<AgentDecision> {
     const objetivo = this.goals[0];
     if (!objetivo) return { kind: "idle", reason: "não tem objetivo nenhum agora" };
 
@@ -43,14 +44,16 @@ export class ResidentAgent extends BaseAgent {
     const alvo = perception.entities.find(e => e.tags.some(t => objetivo.toLowerCase().includes(t)));
     if (!alvo) return { kind: "idle", reason: `nenhum lugar da cidade atende "${objetivo}"` };
 
-    const busca = listEntities().find(e => e.id === alvo.id)?.tools.find(t => t.kind === "search");
-    if (!busca) return { kind: "idle", reason: `${alvo.name} não tem tool de busca` };
+    // Qual tool chamar não está no registro: vem do MCP da entidade.
+    const entidade = listEntities().find(e => e.id === alvo.id);
+    const vitrine = entidade ? await searchToolsOf(entidade) : [];
+    if (vitrine.length === 0) return { kind: "idle", reason: `${alvo.name} não tem tool que eu possa chamar` };
 
     return {
       kind: "call_entity",
       reason: `quer "${objetivo}" e ${alvo.name} atende isso`,
       entityId: alvo.id,
-      tool: busca.name,
+      tool: vitrine[0].tool.name,
       input: {}
     };
   }

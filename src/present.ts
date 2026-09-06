@@ -143,7 +143,6 @@ export function presentEntities(entities: Entity[]): string {
 export function presentEntity(e: Entity): string {
   const partes = [`**${e.name}**`];
   if (e.description) partes.push(e.description);
-  if (e.tools.length > 0) partes.push(`Sabe fazer: ${lista(e.tools.map(t => t.name))}.`);
   partes.push(e.enabled ? "Está no ar." : "Está fora do ar no momento.");
   partes.push(`Apelido dele na cidade: ${e.id}`);
   return partes.join("\n\n");
@@ -252,13 +251,11 @@ export function presentResidentRemoved(r: Resident, warning?: string): string {
 
 function submissionLine(p: Submission): string {
   const extras = p.contato ? `\n  Contato: ${p.contato}` : "";
-  const naoUsadas = p.toolsVerificadas.filter(t => !p.tools.some(d => d.name === t));
-  const sobra = naoUsadas.length > 0 ? `\n  O MCP dela também oferece: ${lista(naoUsadas)}` : "";
   return (
     `• **${p.name}** (apelido: ${p.id})\n` +
     `  ${p.description || "sem descrição"}\n` +
     `  Quer ser chamada para: ${lista(p.tags)}\n` +
-    `  Tools conferidas no ar: ${lista(p.tools.map(t => t.name))}${sobra}\n` +
+    `  O MCP dela expõe: ${lista(p.toolsVerificadas)}\n` +
     `  Endereço: ${p.endpoint}${extras}`
   );
 }

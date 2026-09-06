@@ -48,18 +48,6 @@ function fail(err: unknown) {
   return say(presentError(err), true);
 }
 
-const entityToolShape = z.object({
-  name: z.string().describe("nome da tool no servidor MCP da entidade"),
-  kind: z
-    .enum(["search", "detail", "other"])
-    .optional()
-    .describe("'search' habilita a tool para a orquestração automática"),
-  argsMap: z
-    .record(z.string())
-    .optional()
-    .describe("slot canônico -> parâmetro da tool. Ex.: { \"people\": \"partySize\" }")
-});
-
 const palavraMagica = z
   .string()
   .optional()
@@ -78,7 +66,6 @@ const entityShape = {
     .array(z.string())
     .optional()
     .describe(`capacidades da entidade; use as tags conhecidas: ${Object.keys(LEXICON).join(", ")}`),
-  tools: z.array(entityToolShape).optional(),
   enabled: z.boolean().optional()
 };
 
@@ -253,7 +240,7 @@ export function createCoreServer(): McpServer {
         limit: z.number().int().positive().optional()
       }
     },
-    async ({ request, limit }) => say(presentPlan(buildPlan(request, { limit })))
+    async ({ request, limit }) => say(presentPlan(await buildPlan(request, { limit })))
   );
 
   server.registerTool(
@@ -286,8 +273,8 @@ export function createCoreServer(): McpServer {
       title: "Pedir para entrar na cidade",
       description:
         "Uma entidade se candidata a fazer parte da cidade. Não precisa de senha: qualquer serviço MCP " +
-        "pode pedir. O Core conecta no endereço informado e confere que as tools existem mesmo antes de " +
-        "aceitar o pedido. Entrar de verdade depende da aprovação de quem cuida da cidade.",
+        "pode pedir. Não declare suas tools: o Core conecta no endereço informado e descobre pelo próprio " +
+        "MCP o que você sabe fazer. Entrar de verdade depende da aprovação de quem cuida da cidade.",
       inputSchema: {
         id: z.string().describe("apelido único na cidade, minúsculo (ex.: 'rock-venue')"),
         name: z.string().describe("nome que aparece para as pessoas"),
@@ -296,7 +283,6 @@ export function createCoreServer(): McpServer {
         tags: z
           .array(z.string())
           .describe(`em que tipo de pedido você quer ser chamada; use as tags da cidade: ${Object.keys(LEXICON).join(", ")}`),
-        tools: z.array(entityToolShape).describe("suas tools; pelo menos uma com kind 'search'"),
         contato: z.string().optional().describe("quem procurar se houver dúvida")
       }
     },

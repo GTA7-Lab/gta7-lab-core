@@ -40,6 +40,7 @@ antes de qualquer chamada.
 | `src/slots.ts` | extração de restrições do texto |
 | `src/client.ts` | pool de clientes MCP (http e stdio) + normalização de resultados |
 | `src/orchestrator.ts` | plano, execução, filtros e combinações |
+| `src/discovery.ts` | pergunta as tools ao MCP, escolhe a vitrine e monta os argumentos |
 | `src/mcp-server.ts` | as 19 MCP tools do Core |
 | `src/stdio.ts` | entrypoint local (stdio) |
 | `src/server.ts` | entrypoint HTTP (Vercel): `/mcp` streamable http stateless, e a landing |
@@ -58,12 +59,19 @@ antes de qualquer chamada.
 | `scripts/agents-check.ts` | prova a fundação de agentes (`npm run agents`) |
 
 ## Decisões importantes
-- **`argsMap` no registro** — o Core tem slots canônicos (`query`, `people`,
-  `maxPricePerPerson`, `when`, `near`, `limit`) e cada entidade mapeia esses slots para
-  os nomes de parâmetro das próprias tools. É isso que mantém o orquestrador genérico:
-  adicionar uma entidade é editar JSON, não código.
-- **`kind: "search"`** marca as tools que o orquestrador pode chamar sozinho. O resto só
-  por `call_entity_tool`.
+- **O MCP é a fonte de verdade das capacidades.** O registro guarda só como chegar na
+  entidade (`endpoint`) e em que tipo de pedido ela entra (`tags`). Não há manifesto de
+  tools: `discovery.ts` pergunta ao MCP dela na hora, com cache de 5 min.
+- **Qual tool o Core pode chamar sozinho** é inferido, não declarado: nome de verbo de
+  catálogo (`search_`, `list_`, `get_`...), **zero parâmetros obrigatórios** e nome fora
+  de uma denylist de assunto privado. As duas últimas regras não são zelo teórico: o banco
+  expõe `list_customers` e `search_transactions`, o supermercado expõe `list_purchases`,
+  e todas passariam numa regra ingênua — o Core despejaria dado de cliente na resposta de
+  quem só perguntou o que fazer na cidade. Exigir zero obrigatórios já derruba `send_pix`
+  e `get_show(id)`; a denylist cuida do resto.
+- **Os argumentos são casados por apelido** contra o schema da tool, e só quando o **tipo**
+  bate — simétrico à tabela que `fields.ts` usa para ler as respostas. Mandar texto num
+  parâmetro numérico faz a entidade recusar a chamada inteira, e já aconteceu com data.
 - **Filtro depois da chamada** — o Core reaplica pessoas/orçamento sobre os itens, então
   a restrição vale mesmo se a entidade ignorar os parâmetros. Item sem o campo passa.
 - **Repetir a busca sem `query`** — o Core manda a frase inteira do usuário em `query`, e
@@ -100,15 +108,11 @@ antes de qualquer chamada.
   "transport": "http",
   "endpoint": "https://restaurants.example/mcp",
   "tags": ["food"],
-  "tools": [
-    { "name": "search_restaurants", "kind": "search",
-      "argsMap": { "query": "query", "people": "partySize", "maxPricePerPerson": "maxPrice" } },
-    { "name": "get_restaurant", "kind": "detail", "argsMap": {} }
-  ],
   "enabled": true
 }
 ```
-`transport: "stdio"` usa `command` + `args` no lugar de `endpoint`.
+`transport: "stdio"` usa `command` + `args` no lugar de `endpoint`. **Não há campo
+`tools`**: quais existem vem do MCP.
 Tags conhecidas: `food, music, movie, event, lodging, transport, grocery, dessert, activity` (`src/lexicon.ts`).
 
 ## Formato de morador (`data/residents.json`)
@@ -155,10 +159,11 @@ então vale no Core local; para produção precisa de endpoint http.
 ## Como uma entidade entra na cidade
 Tudo por MCP; ninguém edita o JSON de ninguém.
 
-1. A entidade chama **`submit_entity`** — aberto, sem palavra mágica. O Core conecta no
-   `endpoint` declarado, chama `listTools` e confere que as tools prometidas existem.
-   Se não existem, ou se nenhuma é `kind: "search"`, o pedido é recusado na hora com o
-   motivo. Aceito, entra em `data/submissions.json`.
+1. A entidade chama **`submit_entity`** — aberto, sem palavra mágica. Ela **não declara
+   tools**: informa id, nome, descrição, endpoint e tags. O Core conecta, chama
+   `listTools` e recusa se não sobrar nenhuma tool que ele possa chamar sozinho — senão a
+   entidade entraria na cidade e nunca seria acionada. Aceito, entra em
+   `data/submissions.json`.
 2. `submission_status` (aberto) deixa a entidade acompanhar o próprio pedido.
 3. Quem cuida da cidade usa **`list_submissions`**, **`approve_entity`** e
    **`deny_entity`**, todos com a palavra mágica.

@@ -130,6 +130,6 @@ export abstract class BaseAgent {
   // O contrato existe para que ligar um ciclo depois não mude esta classe.
 
   abstract perceive(city: CityPerception): CityPerception;
-  abstract decide(perception: CityPerception): AgentDecision;
+  abstract decide(perception: CityPerception): Promise<AgentDecision>;
   abstract act(decision: AgentDecision): Promise<unknown>;
 }

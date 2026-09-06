@@ -9,22 +9,6 @@
     "tags": [
       "music"
     ],
-    "tools": [
-      {
-        "name": "search_shows",
-        "kind": "search",
-        "argsMap": {
-          "when": "date",
-          "maxPricePerPerson": "max_price",
-          "limit": "limit"
-        }
-      },
-      {
-        "name": "get_show",
-        "kind": "detail",
-        "argsMap": {}
-      }
-    ],
     "enabled": true
   },
   {
@@ -36,26 +20,6 @@
     "args": [],
     "tags": [
       "grocery"
-    ],
-    "tools": [
-      {
-        "name": "search_products",
-        "kind": "search",
-        "argsMap": {
-          "query": "query",
-          "maxPricePerPerson": "max_price"
-        }
-      },
-      {
-        "name": "check_stock",
-        "kind": "other",
-        "argsMap": {}
-      },
-      {
-        "name": "get_store_info",
-        "kind": "other",
-        "argsMap": {}
-      }
     ],
     "enabled": false
   },
@@ -69,26 +33,6 @@
     "tags": [
       "dessert"
     ],
-    "tools": [
-      {
-        "name": "search_flavors",
-        "kind": "search",
-        "argsMap": {
-          "maxPricePerPerson": "max_price_brl",
-          "limit": "limit"
-        }
-      },
-      {
-        "name": "quote_order",
-        "kind": "other",
-        "argsMap": {}
-      },
-      {
-        "name": "recommend_flavors",
-        "kind": "other",
-        "argsMap": {}
-      }
-    ],
     "enabled": false
   },
   {
@@ -100,31 +44,6 @@
     "args": [],
     "tags": [
       "finance"
-    ],
-    "tools": [
-      {
-        "name": "search_transactions",
-        "kind": "search",
-        "argsMap": {
-          "query": "search",
-          "limit": "limit"
-        }
-      },
-      {
-        "name": "get_account_balance",
-        "kind": "other",
-        "argsMap": {}
-      },
-      {
-        "name": "simulate_loan",
-        "kind": "other",
-        "argsMap": {}
-      },
-      {
-        "name": "send_pix",
-        "kind": "other",
-        "argsMap": {}
-      }
     ],
     "enabled": false
   }
